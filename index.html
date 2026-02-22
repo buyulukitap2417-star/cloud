@@ -75,7 +75,7 @@
 </head>
 <body class="flex h-screen overflow-hidden bg-[#f2f3f5] text-slate-900 dark:bg-canva-dark dark:text-slate-100">
 
-    <!-- Sidebar Navigation -->
+    <!-- Yan Menü -->
     <aside class="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col hidden md:flex">
         <div class="p-6">
             <div class="flex items-center gap-3 mb-8">
@@ -100,10 +100,10 @@
         </div>
     </aside>
 
-    <!-- Main Content Area -->
+    <!-- Ana İçerik Alanı -->
     <main class="flex-1 flex flex-col h-full overflow-hidden">
         
-        <!-- Top Navigation Bar -->
+        <!-- Üst Navigasyon -->
         <header class="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-8 z-20">
             <div class="flex-1 max-w-2xl relative">
                 <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
@@ -125,7 +125,7 @@
         </header>
 
         <div class="flex-1 overflow-y-auto p-8">
-            <!-- Setup Alert -->
+            <!-- Kurulum Uyarısı -->
             <div id="setupAlert" class="hidden mb-8 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-6 animate-fade-in shadow-sm">
                 <div class="flex gap-4">
                     <div class="text-amber-500 text-xl"><i class="fas fa-database"></i></div>
@@ -136,8 +136,9 @@
                 </div>
             </div>
 
-            <!-- Admin Action Panel -->
+            <!-- Yönetim Paneli -->
             <section id="adminPanel" class="hidden mb-12 space-y-8 animate-fade-in">
+                <!-- Kategori Yönetimi -->
                 <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
                     <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-canva-purple">
                         <i class="fas fa-tags"></i> Bulut Kategorileri
@@ -150,6 +151,7 @@
                     <div id="categoryListContainer" class="mt-4 flex flex-wrap gap-2"></div>
                 </div>
 
+                <!-- Dosya Yükleme Paneli -->
                 <div class="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1.5 canva-gradient"></div>
                     <h2 class="text-2xl font-extrabold mb-8">Buluta Dosya Ekle</h2>
@@ -160,20 +162,29 @@
                             <input id="fileInput" type="file" class="hidden" onchange="handleFileSelect()" />
                         </label>
                         <div class="space-y-4">
+                            <!-- Dosya İsmi Belirleme Alanı -->
+                            <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                <span class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Görünür Dosya İsmi</span>
+                                <input type="text" id="customFileNameInput" placeholder="Sitede nasıl görünsün?" 
+                                    class="w-full bg-transparent border-none outline-none text-sm font-bold dark:text-white">
+                            </div>
+
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
-                                    <span class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Dosya</span>
-                                    <p id="selectedFileName" class="text-xs font-bold truncate italic">Seçim yok</p>
+                                    <span class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Gerçek Dosya</span>
+                                    <p id="selectedFileNameDisplay" class="text-xs font-bold truncate italic opacity-50">Seçim yok</p>
                                 </div>
                                 <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
-                                    <span class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Kategori</span>
+                                    <span class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Hedef Kategori</span>
                                     <select id="uploadCategorySelect" class="bg-transparent border-none outline-none text-xs font-bold w-full dark:text-white cursor-pointer"></select>
                                 </div>
                             </div>
+
                             <button id="uploadBtn" disabled onclick="uploadFile()" 
                                 class="canva-gradient text-white w-full py-4 rounded-2xl font-extrabold shadow-xl shadow-purple-500/10 transition-all">
                                 <i class="fas fa-cloud-upload-alt mr-2"></i> MATOTA'ya Aktar
                             </button>
+
                             <div id="uploadProgress" class="hidden h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                 <div id="progressBar" class="canva-gradient h-full transition-all duration-300" style="width: 0%"></div>
                             </div>
@@ -182,6 +193,7 @@
                 </div>
             </section>
 
+            <!-- Dosya Listesi Başlığı -->
             <div class="flex items-center justify-between mb-8">
                 <div>
                     <h2 id="currentCategoryTitle" class="text-2xl font-extrabold italic">MATOTA Cloud Sürücü</h2>
@@ -189,6 +201,7 @@
                 </div>
             </div>
 
+            <!-- Dosya Izgarası -->
             <div id="fileGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 pb-10">
                 <div class="col-span-full py-40 text-center">
                     <div class="inline-block w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
@@ -197,7 +210,7 @@
         </div>
     </main>
 
-    <!-- File Viewer Modal (Görüntüleme Aracı) -->
+    <!-- Dosya Görüntüleyici Modal -->
     <div id="viewerModal" class="fixed inset-0 z-[110] modal-blur hidden flex items-center justify-center p-4 md:p-8">
         <div class="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col relative overflow-hidden animate-fade-in">
             <div class="h-16 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between px-6">
@@ -215,12 +228,11 @@
                 </div>
             </div>
             <div id="viewerContent" class="flex-1 overflow-auto p-4 flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-                <!-- Viewer (iframe or img) injected here -->
             </div>
         </div>
     </div>
 
-    <!-- Auth Modal -->
+    <!-- Giriş Modalı -->
     <div id="passwordModal" class="fixed inset-0 z-[100] modal-blur hidden flex items-center justify-center p-6">
         <div class="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-sm p-10 animate-fade-in relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-2 canva-gradient"></div>
@@ -239,7 +251,7 @@
         </div>
     </div>
 
-    <!-- Toast Notification -->
+    <!-- Bildirim Balonu -->
     <div id="toast" class="fixed bottom-10 right-10 transform translate-y-32 opacity-0 transition-all duration-500 pointer-events-none z-[120]">
         <div class="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4">
             <i id="toastIcon" class="fas fa-check-circle text-purple-500"></i>
@@ -250,7 +262,7 @@
     <script>
         const SUPABASE_URL = "https://xtmnfpfnxsgemjejmpaq.supabase.co";
         const SUPABASE_KEY = "sb_publishable_AFhTTSw30vvy42C1tBkW2Q_suUE1u3G";
-        const STORAGE_BUCKET = "archives"; // Supabase panelinde oluşturduğunuz kova ismi
+        const STORAGE_BUCKET = "archives";
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         const ADMIN_PASS = "AliSengul77MatotaOnline";
@@ -265,7 +277,7 @@
             document.getElementById('adminPasswordInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') validatePassword(); });
         };
 
-        // --- Theme ---
+        // --- Tema İşlemleri ---
         function toggleTheme() {
             const isDark = document.documentElement.classList.toggle('dark');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
@@ -279,7 +291,7 @@
             document.getElementById('themeIcon').className = document.documentElement.classList.contains('dark') ? 'fas fa-sun' : 'fas fa-moon';
         }
 
-        // --- Auth ---
+        // --- Yetki İşlemleri ---
         function handleAdminToggle() { isAdmin ? toggleAdminView() : openPasswordModal(); }
         function openPasswordModal() { document.getElementById('passwordModal').classList.remove('hidden'); document.getElementById('adminPasswordInput').focus(); }
         function closePasswordModal() { document.getElementById('passwordModal').classList.add('hidden'); }
@@ -305,7 +317,7 @@
             if(isAdmin) renderCategoryManagement();
         }
 
-        // --- Görüntüleme Aracı (Viewer) ---
+        // --- Görüntüleme Aracı ---
         function openViewer(url, name, type) {
             const modal = document.getElementById('viewerModal');
             const content = document.getElementById('viewerContent');
@@ -320,13 +332,13 @@
             const t = (type || '').toLowerCase();
             if (t.includes('pdf')) {
                 icon.className = "fas fa-file-pdf text-red-500 text-xl";
-                content.innerHTML = `<iframe src="${url}#toolbar=0" title="PDF Viewer"></iframe>`;
+                content.innerHTML = `<iframe src="${url}#toolbar=0" style="width:100%; height:80vh; border-radius:12px;" title="PDF Viewer"></iframe>`;
             } else if (t.includes('image')) {
                 icon.className = "fas fa-image text-emerald-500 text-xl";
                 content.innerHTML = `<img src="${url}" class="max-w-full max-h-full object-contain rounded-lg shadow-lg">`;
             } else {
                 icon.className = "fas fa-file text-slate-400 text-xl";
-                content.innerHTML = `<div class="text-center p-10"><i class="fas fa-eye-slash text-5xl text-slate-300 mb-4"></i><p class="text-slate-500">Bu dosya türü önizleme için desteklenmiyor.<br>Lütfen indirmeyi deneyin.</p></div>`;
+                content.innerHTML = `<div class="text-center p-10"><i class="fas fa-eye-slash text-5xl text-slate-300 mb-4"></i><p class="text-slate-500">Önizleme desteklenmiyor.</p></div>`;
             }
         }
 
@@ -335,7 +347,7 @@
             document.getElementById('viewerContent').innerHTML = '';
         }
 
-        // --- Data ---
+        // --- Veri Çekme ---
         async function fetchData() {
             try {
                 const { data: catData } = await _supabase.from('categories').select('*').order('name');
@@ -404,14 +416,14 @@
                         </div>
                     </div>
                     <div class="flex gap-2 mt-3">
-                        <button onclick="openViewer('${file.url}', '${file.name}', '${file.type}')" class="flex-1 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-white text-[10px] font-bold rounded-xl hover:bg-canva-purple hover:text-white transition-all">Görüntüle</button>
+                        <button onclick="openViewer('${file.url}', '${file.name}', '${file.type}')" class="flex-1 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-white text-[10px] font-bold rounded-xl hover:bg-canva-purple hover:text-white transition-all">Görüntüle</button>
                         <a href="${file.url}" target="_blank" download="${file.name}" class="flex-1 py-2 bg-slate-900 dark:bg-canva-blue text-white text-[10px] font-bold rounded-xl text-center hover:scale-[1.02] transition-all">İndir</a>
                     </div>
                 </div>
             `).join('');
         }
 
-        // --- Category Management ---
+        // --- Kategori Yönetimi ---
         function renderCategoryManagement() {
             const container = document.getElementById('categoryListContainer');
             if (!container) return;
@@ -430,7 +442,7 @@
                 const { error } = await _supabase.from('categories').insert([{ name }]);
                 if (error) throw error;
                 document.getElementById('newCategoryInput').value = ''; fetchData();
-            } catch (e) { showToast("Kategori zaten mevcut.", "error"); }
+            } catch (e) { showToast("Kategori mevcut.", "error"); }
         }
 
         async function deleteCategory(id) {
@@ -438,36 +450,70 @@
             await _supabase.from('categories').delete().eq('id', id); fetchData();
         }
 
-        // --- File Ops ---
+        // --- Dosya Temizleme (Storage İçin) ---
+        function sanitizeFileName(name) {
+            const turkishMap = {'ç':'c','Ç':'C','ğ':'g','Ğ':'G','ı':'i','I':'I','İ':'i','ö':'o','Ö':'O','ş':'s','Ş':'S','ü':'u','Ü':'U'};
+            let cleanName = name.replace(/[çÇğĞıIİöÖşŞüÜ]/g, (match) => turkishMap[match]);
+            cleanName = cleanName.replace(/[^a-zA-Z0-9.-]/g, '-').replace(/-+/g, '-');
+            return cleanName;
+        }
+
+        // --- Dosya Seçimi ---
+        function handleFileSelect() {
+            const file = document.getElementById('fileInput').files[0];
+            const visibleNameInput = document.getElementById('customFileNameInput');
+            const fileNameDisplay = document.getElementById('selectedFileNameDisplay');
+            const uploadBtn = document.getElementById('uploadBtn');
+            
+            if (file) {
+                // Sitede görünecek isim alanını otomatik doldur (kullanıcı değiştirebilir)
+                visibleNameInput.value = file.name;
+                fileNameDisplay.innerText = file.name;
+                uploadBtn.disabled = false;
+            }
+        }
+
+        // --- Dosya Yükleme ---
         async function uploadFile() {
             const input = document.getElementById('fileInput');
+            const customNameInput = document.getElementById('customFileNameInput');
             const category = document.getElementById('uploadCategorySelect').value;
+            
             if (!input.files[0]) return;
 
             const file = input.files[0];
-            const fileName = `${Date.now()}_${file.name}`;
+            const visibleName = customNameInput.value.trim() || file.name; // Boşsa orijinal ismi kullan
+            
+            // Storage için temiz isim
+            const cleanBaseName = sanitizeFileName(file.name);
+            const storageFileName = `${Date.now()}_${cleanBaseName}`;
+            
             document.getElementById('uploadProgress').classList.remove('hidden');
             updateProgress(20);
             
             try {
-                const { error: storageError } = await _supabase.storage.from(STORAGE_BUCKET).upload(fileName, file);
+                const { error: storageError } = await _supabase.storage.from(STORAGE_BUCKET).upload(storageFileName, file);
                 if(storageError) throw storageError;
 
                 updateProgress(60);
-                const { data: urlData } = _supabase.storage.from(STORAGE_BUCKET).getPublicUrl(fileName);
+                const { data: urlData } = _supabase.storage.from(STORAGE_BUCKET).getPublicUrl(storageFileName);
                 
+                // Veritabanına kullanıcının belirlediği 'visibleName' kaydedilir
                 const { error: dbError } = await _supabase.from('files').insert([{
-                    name: file.name, size: file.size, type: file.type, url: urlData.publicUrl, category: category
+                    name: visibleName, 
+                    size: file.size, 
+                    type: file.type, 
+                    url: urlData.publicUrl, 
+                    category: category
                 }]);
                 if(dbError) throw dbError;
 
                 updateProgress(100);
-                showToast("MATOTA bulutuna yüklendi.");
+                showToast("Dosya MATOTA bulutuna yüklendi.");
                 resetUploadForm();
                 fetchData();
             } catch (e) { 
-                console.error(e);
-                showToast("Hata: " + (e.message || "Bilinmiyor"), "error");
+                showToast("Yükleme hatası!", "error");
                 resetUploadForm();
             }
         }
@@ -479,13 +525,12 @@
 
         function updateProgress(val) { document.getElementById('progressBar').style.width = val + '%'; }
         function resetUploadForm() {
-            document.getElementById('fileInput').value = ''; document.getElementById('selectedFileName').innerText = 'Seçim yok';
-            document.getElementById('uploadBtn').disabled = true; document.getElementById('uploadProgress').classList.add('hidden');
+            document.getElementById('fileInput').value = '';
+            document.getElementById('customFileNameInput').value = '';
+            document.getElementById('selectedFileNameDisplay').innerText = 'Seçim yok';
+            document.getElementById('uploadBtn').disabled = true;
+            document.getElementById('uploadProgress').classList.add('hidden');
             updateProgress(0);
-        }
-        function handleFileSelect() {
-            const file = document.getElementById('fileInput').files[0];
-            if (file) { document.getElementById('selectedFileName').innerText = file.name; document.getElementById('uploadBtn').disabled = false; }
         }
 
         function getFilePreview(file) {
