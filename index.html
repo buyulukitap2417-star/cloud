@@ -33,7 +33,7 @@
         
         .canva-gradient { background: linear-gradient(135deg, #8b3dff, #00c4cc); }
         .file-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 24px; overflow: hidden; }
-        .file-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+        .file-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
         
         .modal-blur { backdrop-filter: blur(16px); background: rgba(14, 18, 23, 0.7); }
         
@@ -51,7 +51,7 @@
         .animate-fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Otomatik Kapak Stilleri */
+        /* Kapak Stilleri */
         .cover-pdf { background: linear-gradient(135deg, #ff4b2b, #ff416c); }
         .cover-video { background: linear-gradient(135deg, #6a11cb, #2575fc); }
         .cover-archive { background: linear-gradient(135deg, #f2994a, #f2c94c); }
@@ -60,10 +60,10 @@
 </head>
 <body class="flex flex-col md:flex-row h-screen overflow-hidden bg-[#f2f3f5] text-slate-900 dark:bg-canva-dark dark:text-slate-100">
 
-    <!-- Yan Menü (Sadece Masaüstü) -->
+    <!-- Yan Menü (Masaüstü) -->
     <aside class="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col hidden md:flex">
         <div class="p-6">
-            <div class="flex items-center gap-3 mb-8">
+            <div class="flex items-center gap-3 mb-8 cursor-pointer" onclick="navigateToHome()">
                 <div class="w-10 h-10 canva-gradient rounded-xl flex items-center justify-center text-white shadow-lg shadow-purple-500/20">
                     <i class="fas fa-cloud text-lg"></i>
                 </div>
@@ -85,7 +85,7 @@
     <main class="flex-1 flex flex-col h-full overflow-hidden">
         <!-- Üst Header -->
         <header class="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 md:px-8 z-20">
-            <div class="flex items-center gap-3 md:hidden">
+            <div class="flex items-center gap-3 md:hidden" onclick="navigateToHome()">
                 <div class="w-8 h-8 canva-gradient rounded-lg flex items-center justify-center text-white shadow-sm">
                     <i class="fas fa-cloud text-sm"></i>
                 </div>
@@ -193,7 +193,7 @@
         </div>
     </div>
 
-    <!-- Giriş Modalı -->
+    <!-- Admin Giriş Modalı -->
     <div id="passwordModal" class="fixed inset-0 z-[120] modal-blur hidden flex items-center justify-center p-6">
         <div class="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-sm p-10 animate-fade-in relative overflow-hidden text-center">
             <div class="absolute top-0 left-0 w-full h-2 canva-gradient"></div>
@@ -207,6 +207,7 @@
         </div>
     </div>
 
+    <!-- Bildirim -->
     <div id="toast" class="fixed bottom-10 right-1/2 translate-x-1/2 md:translate-x-0 md:right-10 transform translate-y-32 opacity-0 transition-all duration-500 pointer-events-none z-[200] w-[90%] md:w-auto">
         <div class="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4">
             <i id="toastIcon" class="fas fa-check-circle text-purple-500"></i><span id="toastMessage" class="font-bold text-sm">Başarılı</span>
@@ -224,8 +225,69 @@
         let currentZoom = 1;
         let currentPdfUrl = "";
 
-        window.onload = () => { initTheme(); fetchData(); document.getElementById('adminPasswordInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') validatePassword(); }); };
+        // --- Routing Mantığı ---
+        window.onload = () => { 
+            initTheme(); 
+            fetchData().then(() => {
+                handleInitialRouting();
+            });
+            document.getElementById('adminPasswordInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') validatePassword(); });
+            
+            // Tarayıcı geri/ileri butonlarını dinle
+            window.addEventListener('popstate', () => {
+                handleInitialRouting();
+            });
+        };
 
+        function updateUrl(category, fileName = null) {
+            let path = "/";
+            if (category !== 'all') {
+                path += encodeURIComponent(category.toLowerCase().replace(/ /g, '-'));
+                if (fileName) {
+                    path += "/" + encodeURIComponent(fileName.toLowerCase().replace(/ /g, '-'));
+                }
+            }
+            window.history.pushState({ category, fileName }, "", path);
+        }
+
+        function navigateToHome() {
+            setFilter('all');
+            closeViewer();
+        }
+
+        function handleInitialRouting() {
+            const path = window.location.pathname.substring(1); // baştaki '/' işaretini kaldır
+            if (!path) {
+                setFilter('all', false);
+                return;
+            }
+
+            const parts = path.split('/').map(p => decodeURIComponent(p));
+            const categorySlug = parts[0];
+            const fileSlug = parts[1];
+
+            // Kategori eşleşmesi bul
+            const targetCategory = allCategories.find(c => 
+                c.name.toLowerCase().replace(/ /g, '-') === categorySlug
+            );
+
+            if (targetCategory) {
+                setFilter(targetCategory.name, false);
+                if (fileSlug) {
+                    const targetFile = allFiles.find(f => 
+                        f.category === targetCategory.name && 
+                        f.name.toLowerCase().replace(/ /g, '-') === fileSlug
+                    );
+                    if (targetFile) {
+                        openViewer(targetFile.url, targetFile.name, targetFile.type, false);
+                    }
+                }
+            } else if (categorySlug === 'all') {
+                setFilter('all', false);
+            }
+        }
+
+        // --- Tema ve Yetki ---
         function toggleTheme() { const isDark = document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', isDark ? 'dark' : 'light'); updateThemeIcon(); }
         function initTheme() { if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark'); updateThemeIcon(); }
         function updateThemeIcon() { document.getElementById('themeIcon').className = document.documentElement.classList.contains('dark') ? 'fas fa-sun' : 'fas fa-moon'; }
@@ -247,6 +309,7 @@
             if(isAdmin) renderCategoryManagement();
         }
 
+        // --- Veri ---
         async function fetchData() {
             try {
                 const { data: catData } = await _supabase.from('categories').select('*').order('name');
@@ -257,7 +320,8 @@
                 const { data: fileData } = await _supabase.from('files').select('*').order('created_at', { ascending: false });
                 allFiles = fileData || [];
                 applyFilter();
-            } catch (e) { console.error(e); }
+                return true;
+            } catch (e) { console.error(e); return false; }
         }
 
         function renderSidebarCategories() {
@@ -283,7 +347,7 @@
             if (select) select.innerHTML = '<option value="Genel">Genel</option>' + allCategories.map(cat => `<option value="${cat.name}">${cat.name}</option>`).join('');
         }
 
-        function setFilter(category) {
+        function setFilter(category, shouldUpdateUrl = true) {
             currentFilter = category;
             document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
             const sBtn = document.getElementById(category === 'all' ? 'btn-all' : 'btn-' + category);
@@ -298,6 +362,8 @@
             
             document.getElementById('currentCategoryTitle').innerText = category === 'all' ? 'MATOTA Cloud' : category;
             applyFilter();
+
+            if (shouldUpdateUrl) updateUrl(category);
         }
 
         function applyFilter() {
@@ -308,18 +374,13 @@
 
         function filterFiles() { applyFilter(); }
 
-        // --- Otomatik Kapak Oluşturucu ---
+        // --- Kapak ve Kartlar ---
         function getFileCover(file) {
             const type = (file.type || '').toLowerCase();
-            const ext = file.name.split('.').pop().toUpperCase();
-
-            if (type.includes('image')) {
-                return `<img src="${file.url}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">`;
-            }
+            if (type.includes('image')) return `<img src="${file.url}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">`;
 
             let coverClass = "cover-generic";
             let icon = "fa-file-alt";
-
             if (type.includes('pdf')) { coverClass = "cover-pdf"; icon = "fa-file-pdf"; }
             else if (type.includes('video')) { coverClass = "cover-video"; icon = "fa-play-circle"; }
             else if (type.includes('zip') || type.includes('rar') || type.includes('7z')) { coverClass = "cover-archive"; icon = "fa-file-archive"; }
@@ -328,8 +389,7 @@
                 <div class="w-full h-full ${coverClass} flex flex-col items-center justify-center text-white p-4 relative">
                     <i class="fas ${icon} text-4xl mb-2 opacity-30"></i>
                     <span class="text-3xl font-black tracking-tighter opacity-90 text-center leading-tight break-words px-2">${file.name}</span>
-                </div>
-            `;
+                </div>`;
         }
 
         function renderFiles(files) {
@@ -356,19 +416,14 @@
                 </div>`).join('');
         }
 
-        function formatBytes(bytes) { if (!bytes || bytes === 0) return '0 B'; const k = 1024, sizes = ['B', 'KB', 'MB', 'GB']; const i = Math.floor(Math.log(bytes) / Math.log(k)); return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]; }
-
-        function openViewer(url, name, type) {
+        // --- Görüntüleyici ---
+        function openViewer(url, name, type, shouldUpdateUrl = true) {
             const viewerModal = document.getElementById('viewerModal');
-            const viewerTitle = document.getElementById('viewerTitle');
-            const downloadBtn = document.getElementById('viewerDownloadBtn');
             const wrapper = document.getElementById('viewerFrameWrapper');
             const pdfControls = document.getElementById('pdfControls');
 
-            if (!viewerModal || !viewerTitle || !downloadBtn || !wrapper || !pdfControls) return;
-
-            viewerTitle.innerText = name;
-            downloadBtn.href = url;
+            document.getElementById('viewerTitle').innerText = name;
+            document.getElementById('viewerDownloadBtn').href = url;
             viewerModal.classList.remove('hidden');
             
             currentZoom = 1;
@@ -385,32 +440,33 @@
                 pdfControls.classList.add('hidden');
                 wrapper.innerHTML = `<img src="${url}" class="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl">`;
                 wrapper.classList.remove('md:w-[850px]');
-            } else {
-                pdfControls.classList.add('hidden');
-                wrapper.innerHTML = `<div class="text-center p-20 bg-white dark:bg-slate-900 rounded-3xl"><i class="fas fa-eye-slash text-5xl text-slate-300 mb-4"></i><p class="text-slate-500 font-bold">Bu dosya önizlenemez.</p></div>`;
             }
+
+            if (shouldUpdateUrl) updateUrl(currentFilter, name);
+        }
+
+        function closeViewer() { 
+            document.getElementById('viewerModal').classList.add('hidden'); 
+            document.getElementById('viewerFrameWrapper').innerHTML = ''; 
+            updateUrl(currentFilter);
         }
 
         function zoomViewer(factor) {
             currentZoom = Math.max(0.5, Math.min(3, currentZoom * factor));
-            const wrapper = document.getElementById('viewerFrameWrapper');
-            if (wrapper) wrapper.style.transform = `scale(${currentZoom})`;
+            document.getElementById('viewerFrameWrapper').style.transform = `scale(${currentZoom})`;
             document.getElementById('zoomText').innerText = Math.round(currentZoom * 100) + "%";
         }
 
         function printPDF() { if (currentPdfUrl) window.open(currentPdfUrl, '_blank').print(); }
-        function closeViewer() { document.getElementById('viewerModal').classList.add('hidden'); document.getElementById('viewerFrameWrapper').innerHTML = ''; }
 
+        // --- Dosya İşlemleri & Admin ---
         function handleFileSelect() {
             const fileInput = document.getElementById('fileInput');
-            const customNameInput = document.getElementById('customFileNameInput');
-            const display = document.getElementById('selectedFileNameDisplay');
-            const uploadBtn = document.getElementById('uploadBtn');
             if (fileInput && fileInput.files[0]) {
                 const file = fileInput.files[0];
-                if(customNameInput) customNameInput.value = file.name;
-                if(display) display.innerText = formatBytes(file.size);
-                if(uploadBtn) uploadBtn.disabled = false;
+                document.getElementById('customFileNameInput').value = file.name;
+                document.getElementById('selectedFileNameDisplay').innerText = formatBytes(file.size);
+                document.getElementById('uploadBtn').disabled = false;
             }
         }
 
@@ -422,29 +478,18 @@
         async function uploadFile() {
             const fileInput = document.getElementById('fileInput');
             const customNameInput = document.getElementById('customFileNameInput');
-            const categorySelect = document.getElementById('uploadCategorySelect');
             if (!fileInput || !fileInput.files[0]) return;
-            
             const file = fileInput.files[0];
-            const visibleName = (customNameInput ? customNameInput.value.trim() : "") || file.name;
+            const visibleName = customNameInput.value.trim() || file.name;
             const storagePath = `${Date.now()}_${sanitizeForStorage(file.name)}`;
-            
-            const progress = document.getElementById('uploadProgress');
-            if(progress) progress.classList.remove('hidden');
+            document.getElementById('uploadProgress').classList.remove('hidden');
             updateProgress(20);
-            
             try {
                 const { error: sErr } = await _supabase.storage.from(STORAGE_BUCKET).upload(storagePath, file);
                 if(sErr) throw sErr;
                 updateProgress(60);
                 const { data: uData } = _supabase.storage.from(STORAGE_BUCKET).getPublicUrl(storagePath);
-                await _supabase.from('files').insert([{ 
-                    name: visibleName, 
-                    size: file.size, 
-                    type: file.type, 
-                    url: uData.publicUrl, 
-                    category: categorySelect ? categorySelect.value : "Genel" 
-                }]);
+                await _supabase.from('files').insert([{ name: visibleName, size: file.size, type: file.type, url: uData.publicUrl, category: document.getElementById('uploadCategorySelect').value }]);
                 updateProgress(100);
                 showToast("Buluta yüklendi!");
                 resetUploadForm();
@@ -452,32 +497,20 @@
             } catch (e) { showToast("Yükleme hatası!", "error"); resetUploadForm(); }
         }
 
-        function updateProgress(v) { 
-            const bar = document.getElementById('progressBar');
-            if (bar) bar.style.width = v + '%'; 
-        }
-
+        function updateProgress(v) { const bar = document.getElementById('progressBar'); if (bar) bar.style.width = v + '%'; }
         function resetUploadForm() { 
-            const fileInput = document.getElementById('fileInput');
-            const customNameInput = document.getElementById('customFileNameInput');
-            const display = document.getElementById('selectedFileNameDisplay');
-            const uploadBtn = document.getElementById('uploadBtn');
-            const progress = document.getElementById('uploadProgress');
-            if (fileInput) fileInput.value = ''; 
-            if (customNameInput) customNameInput.value = ''; 
-            if (display) display.innerText = 'Seçim yok'; 
-            if (uploadBtn) uploadBtn.disabled = true; 
-            if (progress) progress.classList.add('hidden'); 
+            document.getElementById('fileInput').value = ''; 
+            document.getElementById('customFileNameInput').value = ''; 
+            document.getElementById('selectedFileNameDisplay').innerText = 'Seçim yok'; 
+            document.getElementById('uploadBtn').disabled = true; 
+            document.getElementById('uploadProgress').classList.add('hidden'); 
         }
 
         async function addCategory() {
             const input = document.getElementById('newCategoryInput');
-            const n = input ? input.value.trim() : "";
-            if (!n) return;
-            await _supabase.from('categories').insert([{ name: n }]);
-            if(input) input.value = ''; 
-            fetchData();
-            showToast("Kategori eklendi.");
+            if (!input.value.trim()) return;
+            await _supabase.from('categories').insert([{ name: input.value.trim() }]);
+            input.value = ''; fetchData();
         }
         
         function renderCategoryManagement() {
@@ -493,7 +526,7 @@
         async function deleteCategory(id) { if(confirm("Silinsin mi?")) { await _supabase.from('categories').delete().eq('id', id); fetchData(); } }
         async function deleteFile(id) { if (confirm("Kalıcı olarak silinsin mi?")) { await _supabase.from('files').delete().eq('id', id); fetchData(); } }
         function showToast(m, t = "success") { const toast = document.getElementById('toast'); if(toast) { document.getElementById('toastMessage').innerText = m; toast.classList.remove('translate-y-32', 'opacity-0'); setTimeout(() => toast.classList.add('translate-y-32', 'opacity-0'), 3000); } }
-        function copySQL() { const sql = document.getElementById('sqlCode'); if(sql) { navigator.clipboard.writeText(sql.innerText).then(() => showToast("Kopyalandı!")); } }
+        function formatBytes(bytes) { if (!bytes || bytes === 0) return '0 B'; const k = 1024, sizes = ['B', 'KB', 'MB', 'GB']; const i = Math.floor(Math.log(bytes) / Math.log(k)); return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]; }
     </script>
 </body>
 </html>
