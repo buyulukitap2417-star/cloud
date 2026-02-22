@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MATOTA Cloud | Modern Dosya Arşivi</title>
+    <title>MATOTA Cloud</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -33,7 +33,7 @@
         
         .canva-gradient { background: linear-gradient(135deg, #8b3dff, #00c4cc); }
         .file-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 24px; overflow: hidden; }
-        .file-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        .file-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
         
         .modal-blur { backdrop-filter: blur(16px); background: rgba(14, 18, 23, 0.7); }
         
@@ -51,7 +51,6 @@
         .animate-fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Kapak Stilleri */
         .cover-pdf { background: linear-gradient(135deg, #ff4b2b, #ff416c); }
         .cover-video { background: linear-gradient(135deg, #6a11cb, #2575fc); }
         .cover-archive { background: linear-gradient(135deg, #f2994a, #f2c94c); }
@@ -60,7 +59,7 @@
 </head>
 <body class="flex flex-col md:flex-row h-screen overflow-hidden bg-[#f2f3f5] text-slate-900 dark:bg-canva-dark dark:text-slate-100">
 
-    <!-- Yan Menü (Masaüstü) -->
+    <!-- Yan Menü (Sadece Masaüstü) -->
     <aside class="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col hidden md:flex">
         <div class="p-6">
             <div class="flex items-center gap-3 mb-8 cursor-pointer" onclick="navigateToHome()">
@@ -94,7 +93,7 @@
 
             <div class="flex-1 max-w-xl relative mx-4">
                 <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                <input type="text" id="searchInput" placeholder="Arşivde ara..." oninput="filterFiles()"
+                <input type="text" id="searchInput" placeholder="Bulutta ara..." oninput="filterFiles()"
                     class="w-full pl-10 pr-4 py-2.5 bg-slate-100 dark:bg-slate-800 border-transparent focus:bg-white dark:focus:bg-slate-700 focus:ring-2 focus:ring-purple-500/20 rounded-xl outline-none transition-all text-sm">
             </div>
 
@@ -225,7 +224,7 @@
         let currentZoom = 1;
         let currentPdfUrl = "";
 
-        // --- Routing Mantığı ---
+        // --- Hash-Based Routing Mantığı (Çözüm) ---
         window.onload = () => { 
             initTheme(); 
             fetchData().then(() => {
@@ -233,21 +232,24 @@
             });
             document.getElementById('adminPasswordInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') validatePassword(); });
             
-            // Tarayıcı geri/ileri butonlarını dinle
-            window.addEventListener('popstate', () => {
+            // URL değiştiğinde tetiklenir (Geri tuşu veya elle link değişimi)
+            window.addEventListener('hashchange', () => {
                 handleInitialRouting();
             });
         };
 
         function updateUrl(category, fileName = null) {
-            let path = "/";
+            let hash = "#";
             if (category !== 'all') {
-                path += encodeURIComponent(category.toLowerCase().replace(/ /g, '-'));
+                hash += "/" + encodeURIComponent(category.toLowerCase().replace(/ /g, '-'));
                 if (fileName) {
-                    path += "/" + encodeURIComponent(fileName.toLowerCase().replace(/ /g, '-'));
+                    hash += "/" + encodeURIComponent(fileName.toLowerCase().replace(/ /g, '-'));
                 }
+            } else {
+                hash = "#/";
             }
-            window.history.pushState({ category, fileName }, "", path);
+            // window.location.hash kullanarak yönlendirme yapıyoruz
+            window.location.hash = hash;
         }
 
         function navigateToHome() {
@@ -256,13 +258,13 @@
         }
 
         function handleInitialRouting() {
-            const path = window.location.pathname.substring(1); // baştaki '/' işaretini kaldır
-            if (!path) {
+            const hash = window.location.hash.substring(2); // baştaki '#/' kısmını kaldır
+            if (!hash) {
                 setFilter('all', false);
                 return;
             }
 
-            const parts = path.split('/').map(p => decodeURIComponent(p));
+            const parts = hash.split('/').map(p => decodeURIComponent(p));
             const categorySlug = parts[0];
             const fileSlug = parts[1];
 
@@ -386,9 +388,9 @@
             else if (type.includes('zip') || type.includes('rar') || type.includes('7z')) { coverClass = "cover-archive"; icon = "fa-file-archive"; }
 
             return `
-                <div class="w-full h-full ${coverClass} flex flex-col items-center justify-center text-white p-4 relative">
-                    <i class="fas ${icon} text-4xl mb-2 opacity-30"></i>
-                    <span class="text-3xl font-black tracking-tighter opacity-90 text-center leading-tight break-words px-2">${file.name}</span>
+                <div class="w-full h-full ${coverClass} flex flex-col items-center justify-center text-white p-4 relative text-center">
+                    <i class="fas ${icon} text-3xl mb-2 opacity-30"></i>
+                    <span class="text-2xl md:text-3xl font-black tracking-tighter opacity-90 leading-tight break-words px-2">${file.name}</span>
                 </div>`;
         }
 
