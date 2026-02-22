@@ -27,26 +27,43 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; transition: background-color 0.3s, color 0.3s; }
+        
         .sidebar-item.active { background-color: rgba(139, 61, 255, 0.1); color: #8b3dff; border-right: 3px solid #8b3dff; }
         .dark .sidebar-item.active { background-color: rgba(139, 61, 255, 0.2); color: #a870ff; }
+        
         .canva-gradient { background: linear-gradient(135deg, #8b3dff, #00c4cc); }
         .file-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .file-card:hover { transform: translateY(-5px); }
-        .modal-blur { backdrop-filter: blur(12px); background: rgba(14, 18, 23, 0.8); }
+        .file-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        
+        .modal-blur { backdrop-filter: blur(16px); background: rgba(14, 18, 23, 0.7); }
+        
+        /* PDF Görüntüleyici Zoom Alanı */
+        #viewerFrameWrapper {
+            transition: transform 0.2s ease-in-out;
+            transform-origin: top center;
+        }
+
+        /* Mobil Scrollbar Gizleme */
+        @media (max-width: 768px) {
+            .no-scrollbar::-webkit-scrollbar { display: none; }
+            .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        }
+
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
-        .viewer-container iframe { width: 100%; height: 80vh; border: none; border-radius: 12px; }
+        .dark ::-webkit-scrollbar-thumb { background: #374151; }
+
         .animate-fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="flex h-screen overflow-hidden bg-[#f2f3f5] text-slate-900 dark:bg-canva-dark dark:text-slate-100">
+<body class="flex flex-col md:flex-row h-screen overflow-hidden bg-[#f2f3f5] text-slate-900 dark:bg-canva-dark dark:text-slate-100">
 
-    <!-- Yan Menü -->
-    <aside class="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col hidden md:flex">
+    <!-- Yan Menü (Sadece Masaüstü) -->
+    <aside class="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col hidden md:flex">
         <div class="p-6">
             <div class="flex items-center gap-3 mb-8">
-                <div class="w-10 h-10 canva-gradient rounded-xl flex items-center justify-center text-white shadow-lg">
+                <div class="w-10 h-10 canva-gradient rounded-xl flex items-center justify-center text-white shadow-lg shadow-purple-500/20">
                     <i class="fas fa-cloud text-lg"></i>
                 </div>
                 <span class="font-extrabold text-xl tracking-tight italic">MATOTA</span>
@@ -65,40 +82,56 @@
 
     <!-- Ana Alan -->
     <main class="flex-1 flex flex-col h-full overflow-hidden">
-        <header class="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-8 z-20">
-            <div class="flex-1 max-w-2xl relative">
-                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="searchInput" placeholder="Arşivde ara..." oninput="filterFiles()"
-                    class="w-full pl-12 pr-4 py-3 bg-slate-100 dark:bg-slate-800 border-transparent focus:bg-white dark:focus:bg-slate-700 focus:ring-2 focus:ring-purple-500/20 rounded-2xl outline-none transition-all text-sm">
+        <!-- Üst Header -->
+        <header class="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 md:px-8 z-20">
+            <div class="flex items-center gap-3 md:hidden">
+                <div class="w-8 h-8 canva-gradient rounded-lg flex items-center justify-center text-white">
+                    <i class="fas fa-cloud text-sm"></i>
+                </div>
+                <h1 class="font-bold text-lg italic">MATOTA</h1>
             </div>
-            <div class="flex items-center gap-4 ml-8">
-                <button onclick="toggleTheme()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:scale-110 transition-all">
+
+            <div class="flex-1 max-w-xl relative mx-4">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input type="text" id="searchInput" placeholder="Arşivde ara..." oninput="filterFiles()"
+                    class="w-full pl-10 pr-4 py-2.5 bg-slate-100 dark:bg-slate-800 border-transparent focus:bg-white dark:focus:bg-slate-700 focus:ring-2 focus:ring-purple-500/20 rounded-xl outline-none transition-all text-sm">
+            </div>
+
+            <div class="flex items-center gap-2 md:gap-4">
+                <button onclick="toggleTheme()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:scale-105 transition-all">
                     <i id="themeIcon" class="fas fa-moon"></i>
                 </button>
-                <button id="adminModeBtn" onclick="handleAdminToggle()" class="canva-gradient text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-purple-500/20 hover:scale-105 transition-all flex items-center gap-2">
+                <!-- Admin Butonu Sadece Masaüstünde Görünür -->
+                <button id="adminModeBtn" onclick="handleAdminToggle()" class="hidden md:flex canva-gradient text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-purple-500/20 hover:scale-105 transition-all items-center gap-2">
                     <i id="adminIcon" class="fas fa-user-shield"></i>
                     <span id="adminBtnText">Admin</span>
                 </button>
             </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-8">
-            <!-- Yönetim Paneli -->
+        <!-- Mobil Kategori Kaydırıcı -->
+        <div class="md:hidden flex overflow-x-auto p-4 gap-2 no-scrollbar bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
+            <button onclick="setFilter('all')" class="mobile-cat-btn whitespace-nowrap px-4 py-2 rounded-full bg-purple-100 text-purple-600 text-xs font-bold active:scale-95 transition-all" id="m-btn-all">Tümü</button>
+            <div id="mobileCategories" class="flex gap-2"></div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4 md:p-8">
+            <!-- Yönetim Paneli (Sadece Admin Açınca Görünür) -->
             <section id="adminPanel" class="hidden mb-12 space-y-8 animate-fade-in">
                 <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
                     <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-canva-purple"><i class="fas fa-tags"></i> Kategori Yönetimi</h3>
                     <div class="flex gap-3">
-                        <input type="text" id="newCategoryInput" placeholder="Yeni kategori adı..." class="flex-1 px-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-purple-500/20">
+                        <input type="text" id="newCategoryInput" placeholder="Yeni kategori adı..." class="flex-1 px-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-purple-500/20 dark:text-white text-sm">
                         <button onclick="addCategory()" class="bg-slate-900 dark:bg-canva-purple text-white px-6 py-2 rounded-xl font-bold">Ekle</button>
                     </div>
                     <div id="categoryListContainer" class="mt-4 flex flex-wrap gap-2"></div>
                 </div>
 
-                <div class="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
+                <div class="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1.5 canva-gradient"></div>
                     <h2 class="text-2xl font-extrabold mb-8">Buluta Dosya Ekle</h2>
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <label for="fileInput" class="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-3xl p-10 flex flex-col items-center justify-center cursor-pointer hover:border-purple-400 hover:bg-purple-50/10 transition-all group">
+                        <label for="fileInput" class="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-3xl p-6 md:p-10 flex flex-col items-center justify-center cursor-pointer hover:border-purple-400 hover:bg-purple-50/10 transition-all group">
                             <i class="fas fa-cloud-upload-alt text-3xl text-slate-400 mb-4"></i>
                             <p class="text-sm font-bold text-slate-600">Dosya Seç</p>
                             <input id="fileInput" type="file" class="hidden" onchange="handleFileSelect()" />
@@ -111,7 +144,7 @@
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
                                     <span class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Gerçek Dosya</span>
-                                    <p id="selectedFileNameDisplay" class="text-xs font-bold truncate italic opacity-50">Seçim yok</p>
+                                    <p id="selectedFileNameDisplay" class="text-[10px] font-bold truncate italic opacity-50">Seçim yok</p>
                                 </div>
                                 <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
                                     <span class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Kategori</span>
@@ -127,45 +160,63 @@
                 </div>
             </section>
 
-            <h2 id="currentCategoryTitle" class="text-2xl font-extrabold italic mb-8">MATOTA Cloud</h2>
-            <div id="fileGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 pb-10">
+            <h2 id="currentCategoryTitle" class="text-xl md:text-2xl font-extrabold italic mb-6">MATOTA Cloud</h2>
+            <!-- Kart Izgarası (Mobilde 2 sütun) -->
+            <div id="fileGrid" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 pb-20">
                 <div class="col-span-full py-40 text-center"><div class="inline-block w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div></div>
             </div>
         </div>
     </main>
 
-    <!-- Görüntüleyici Modal -->
-    <div id="viewerModal" class="fixed inset-0 z-[110] modal-blur hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col relative overflow-hidden animate-fade-in">
-            <div class="h-16 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between px-6">
-                <div class="flex items-center gap-3"><i id="viewerIcon" class="fas fa-file-pdf text-red-500 text-xl"></i><h3 id="viewerTitle" class="font-bold truncate">Dosya</h3></div>
-                <div class="flex items-center gap-3">
-                    <a id="viewerDownloadBtn" href="#" download class="text-slate-400 hover:text-canva-purple p-2"><i class="fas fa-download"></i></a>
-                    <button onclick="closeViewer()" class="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 dark:bg-slate-800 hover:text-red-500 transition-all"><i class="fas fa-times"></i></button>
+    <!-- Görüntüleyici Modal (Tam Ekran PDF ve Zoom) -->
+    <div id="viewerModal" class="fixed inset-0 z-[110] modal-blur hidden flex items-center justify-center p-0 md:p-8">
+        <div class="bg-white dark:bg-slate-900 md:rounded-[2rem] shadow-2xl w-full h-full md:max-w-6xl md:h-[90vh] flex flex-col relative overflow-hidden animate-fade-in">
+            <div class="h-16 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between px-4 md:px-6 bg-white dark:bg-slate-900 z-10">
+                <div class="flex items-center gap-2 md:gap-3 max-w-[50%]">
+                    <i id="viewerIcon" class="fas fa-file-pdf text-red-500 text-lg"></i>
+                    <h3 id="viewerTitle" class="font-bold text-sm md:text-base truncate">Dosya</h3>
+                </div>
+                <!-- Kontrol Barı -->
+                <div class="flex items-center gap-1 md:gap-3">
+                    <a id="viewerDownloadBtn" href="#" download class="w-9 h-9 flex items-center justify-center rounded-full bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-canva-purple transition-all">
+                        <i class="fas fa-download text-xs"></i>
+                    </a>
+                    <div id="pdfControls" class="hidden flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1 mr-2">
+                        <button onclick="zoomViewer(0.9)" class="w-8 h-8 flex items-center justify-center hover:bg-white dark:hover:bg-slate-700 rounded-md transition-all"><i class="fas fa-search-minus text-xs"></i></button>
+                        <span id="zoomText" class="text-[10px] font-bold px-2 w-10 text-center">100%</span>
+                        <button onclick="zoomViewer(1.1)" class="w-8 h-8 flex items-center justify-center hover:bg-white dark:hover:bg-slate-700 rounded-md transition-all"><i class="fas fa-search-plus text-xs"></i></button>
+                        <div class="w-px h-4 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                        <button onclick="printPDF()" class="w-8 h-8 flex items-center justify-center hover:bg-white dark:hover:bg-slate-700 rounded-md transition-all text-blue-500"><i class="fas fa-print text-xs"></i></button>
+                    </div>
+                    <button onclick="closeViewer()" class="w-9 h-9 flex items-center justify-center rounded-full bg-slate-50 dark:bg-slate-800 hover:text-red-500 transition-all"><i class="fas fa-times"></i></button>
                 </div>
             </div>
-            <div id="viewerContent" class="flex-1 overflow-auto p-4 flex items-center justify-center bg-slate-50 dark:bg-slate-950"></div>
+            <div id="viewerContent" class="flex-1 overflow-auto bg-slate-200 dark:bg-slate-950 flex items-start justify-center p-2 md:p-4">
+                <div id="viewerFrameWrapper" class="w-full h-full flex items-center justify-center">
+                    <!-- Dinamik Iframe/Img buraya gelecek -->
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Giriş Modalı -->
-    <div id="passwordModal" class="fixed inset-0 z-[100] modal-blur hidden flex items-center justify-center p-6">
+    <div id="passwordModal" class="fixed inset-0 z-[120] modal-blur hidden flex items-center justify-center p-6">
         <div class="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-sm p-10 animate-fade-in relative overflow-hidden text-center">
             <div class="absolute top-0 left-0 w-full h-2 canva-gradient"></div>
             <div class="w-16 h-16 bg-purple-50 dark:bg-purple-900/20 text-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6"><i class="fas fa-lock-open text-2xl"></i></div>
-            <h3 class="text-xl font-extrabold uppercase">MATOTA Yönetim</h3>
-            <input type="password" id="adminPasswordInput" placeholder="Sistem şifresi" class="w-full px-5 py-4 mt-6 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl outline-none text-center font-bold">
+            <h3 class="text-xl font-extrabold uppercase italic">Admin Girişi</h3>
+            <input type="password" id="adminPasswordInput" placeholder="Şifre" class="w-full px-5 py-4 mt-6 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl outline-none text-center font-bold dark:text-white">
             <div class="flex flex-col gap-3 mt-6">
-                <button onclick="validatePassword()" class="canva-gradient text-white w-full py-3.5 rounded-2xl font-extrabold transition-all">Giriş Yap</button>
-                <button onclick="closePasswordModal()" class="text-slate-400 text-xs font-bold py-2">İptal</button>
+                <button onclick="validatePassword()" class="canva-gradient text-white w-full py-4 rounded-2xl font-extrabold shadow-xl transition-all">Giriş Yap</button>
+                <button onclick="closePasswordModal()" class="text-slate-400 text-xs font-bold py-2">Kapat</button>
             </div>
         </div>
     </div>
 
-    <!-- Toast -->
-    <div id="toast" class="fixed bottom-10 right-10 transform translate-y-32 opacity-0 transition-all duration-500 pointer-events-none z-[120]">
+    <!-- Bildirim -->
+    <div id="toast" class="fixed bottom-10 right-1/2 translate-x-1/2 md:translate-x-0 md:right-10 transform translate-y-32 opacity-0 transition-all duration-500 pointer-events-none z-[200] w-[90%] md:w-auto">
         <div class="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4">
-            <i id="toastIcon" class="fas fa-check-circle text-purple-500"></i><span id="toastMessage" class="font-bold text-sm">İşlem Başarılı</span>
+            <i id="toastIcon" class="fas fa-check-circle text-purple-500"></i><span id="toastMessage" class="font-bold text-sm">Başarılı</span>
         </div>
     </div>
 
@@ -177,6 +228,8 @@
         const ADMIN_PASS = "AliSengul77MatotaOnline";
 
         let allFiles = [], allCategories = [], isAdmin = false, currentFilter = 'all';
+        let currentZoom = 1;
+        let currentPdfUrl = "";
 
         window.onload = () => { initTheme(); fetchData(); document.getElementById('adminPasswordInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') validatePassword(); }); };
 
@@ -187,13 +240,23 @@
         function handleAdminToggle() { isAdmin ? toggleAdminView() : openPasswordModal(); }
         function openPasswordModal() { document.getElementById('passwordModal').classList.remove('hidden'); document.getElementById('adminPasswordInput').focus(); }
         function closePasswordModal() { document.getElementById('passwordModal').classList.add('hidden'); }
-        function validatePassword() { if (document.getElementById('adminPasswordInput').value === ADMIN_PASS) { closePasswordModal(); toggleAdminView(); showToast("MATOTA yetkisi sağlandı."); } else { showToast("Hatalı şifre!", "error"); } }
+        
+        function validatePassword() { 
+            if (document.getElementById('adminPasswordInput').value === ADMIN_PASS) { 
+                closePasswordModal(); 
+                toggleAdminView(); 
+                showToast("Admin girişi başarılı!"); 
+            } else { 
+                showToast("Şifre yanlış!", "error"); 
+            } 
+        }
+
         function toggleAdminView() {
             isAdmin = !isAdmin;
             document.getElementById('adminPanel').classList.toggle('hidden', !isAdmin);
             const btn = document.getElementById('adminModeBtn');
             btn.classList.toggle('bg-red-500', isAdmin);
-            document.getElementById('adminBtnText').innerText = isAdmin ? "Sürücüden Çık" : "Yetkili Girişi";
+            document.getElementById('adminBtnText').innerText = isAdmin ? "Çıkış Yap" : "Admin";
             renderFiles(allFiles);
             if(isAdmin) renderCategoryManagement();
         }
@@ -203,6 +266,7 @@
                 const { data: catData } = await _supabase.from('categories').select('*').order('name');
                 allCategories = catData || [];
                 renderSidebarCategories();
+                renderMobileCategories();
                 renderUploadCategories();
                 const { data: fileData } = await _supabase.from('files').select('*').order('created_at', { ascending: false });
                 allFiles = fileData || [];
@@ -213,19 +277,38 @@
         function renderSidebarCategories() {
             document.getElementById('dynamicCategories').innerHTML = allCategories.map(cat => `
                 <button onclick="setFilter('${cat.name}')" id="btn-${cat.name}" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
-                    <i class="fas fa-folder w-5 text-center"></i> ${cat.name}
+                    <i class="fas fa-folder w-5 text-center text-xs opacity-50"></i> ${cat.name}
+                </button>`).join('');
+        }
+
+        function renderMobileCategories() {
+            document.getElementById('mobileCategories').innerHTML = allCategories.map(cat => `
+                <button onclick="setFilter('${cat.name}')" id="m-btn-${cat.name}" class="mobile-cat-btn whitespace-nowrap px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold active:scale-95 transition-all">
+                    ${cat.name}
                 </button>`).join('');
         }
 
         function renderUploadCategories() {
-            document.getElementById('uploadCategorySelect').innerHTML = '<option value="Genel">Genel</option>' + allCategories.map(cat => `<option value="${cat.name}">${cat.name}</option>`).join('');
+            const select = document.getElementById('uploadCategorySelect');
+            if (select) {
+                select.innerHTML = '<option value="Genel">Genel</option>' + allCategories.map(cat => `<option value="${cat.name}">${cat.name}</option>`).join('');
+            }
         }
 
         function setFilter(category) {
             currentFilter = category;
             document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
             document.getElementById(category === 'all' ? 'btn-all' : 'btn-' + category)?.classList.add('active');
-            document.getElementById('currentCategoryTitle').innerText = category === 'all' ? 'MATOTA Cloud Sürücü' : category;
+            document.querySelectorAll('.mobile-cat-btn').forEach(el => {
+                el.classList.remove('bg-purple-100', 'text-purple-600');
+                el.classList.add('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
+            });
+            const mBtn = document.getElementById(category === 'all' ? 'm-btn-all' : 'm-btn-' + category);
+            if(mBtn) {
+                mBtn.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
+                mBtn.classList.add('bg-purple-100', 'text-purple-600');
+            }
+            document.getElementById('currentCategoryTitle').innerText = category === 'all' ? 'MATOTA Cloud' : category;
             applyFilter();
         }
 
@@ -239,20 +322,23 @@
 
         function renderFiles(files) {
             const grid = document.getElementById('fileGrid');
-            if (files.length === 0) { grid.innerHTML = `<div class="col-span-full py-32 text-center text-slate-400"><i class="fas fa-cloud-moon text-5xl mb-4"></i><p>Dosya bulunamadı.</p></div>`; return; }
+            if (files.length === 0) { grid.innerHTML = `<div class="col-span-full py-32 text-center text-slate-400"><i class="fas fa-cloud-moon text-5xl mb-4"></i><p class="text-xs font-bold uppercase tracking-widest">Henüz Dosya Yok</p></div>`; return; }
             grid.innerHTML = files.map(file => `
-                <div class="file-card bg-white dark:bg-slate-800 rounded-3xl p-4 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col group relative overflow-hidden">
-                    ${isAdmin ? `<button onclick="deleteFile('${file.id}')" class="absolute top-2 right-2 w-7 h-7 bg-red-50 dark:bg-red-900/50 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 z-10"><i class="fas fa-trash-alt text-xs"></i></button>` : ''}
-                    <div class="aspect-square rounded-2xl bg-slate-50 dark:bg-slate-700 mb-3 flex items-center justify-center overflow-hidden cursor-pointer" onclick="openViewer('${file.url}', '${file.name}', '${file.type}')">
+                <div class="file-card bg-white dark:bg-slate-800 rounded-3xl p-3 md:p-4 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col group relative overflow-hidden">
+                    ${isAdmin ? `<button onclick="deleteFile('${file.id}')" class="absolute top-2 right-2 w-7 h-7 bg-red-50 dark:bg-red-900/50 text-red-500 rounded-lg opacity-100 md:opacity-0 group-hover:opacity-100 z-10 transition-all"><i class="fas fa-trash-alt text-[10px]"></i></button>` : ''}
+                    <div class="aspect-square rounded-2xl bg-slate-50 dark:bg-slate-700 mb-3 flex items-center justify-center overflow-hidden cursor-pointer active:scale-95 transition-all" onclick="openViewer('${file.url}', '${file.name}', '${file.type}')">
                         ${getFilePreview(file)}
                     </div>
                     <div class="flex-1 px-1">
-                        <h3 class="font-bold text-xs truncate dark:text-white">${file.name}</h3>
-                        <div class="flex justify-between text-[9px] text-slate-400 mt-1 font-bold italic"><span>${formatBytes(file.size)}</span><span class="text-purple-500 uppercase">${file.category || 'Genel'}</span></div>
+                        <h3 class="font-bold text-[11px] md:text-xs truncate dark:text-white mb-1">${file.name}</h3>
+                        <div class="flex justify-between text-[9px] text-slate-400 font-bold opacity-75">
+                            <span>${formatBytes(file.size)}</span>
+                            <span class="text-purple-500 uppercase">${file.category || 'Genel'}</span>
+                        </div>
                     </div>
-                    <div class="flex gap-2 mt-3">
-                        <button onclick="openViewer('${file.url}', '${file.name}', '${file.type}')" class="flex-1 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-white text-[10px] font-bold rounded-xl hover:bg-canva-purple hover:text-white transition-all">Görüntüle</button>
-                        <a href="${file.url}" target="_blank" download="${file.name}" class="flex-1 py-2 bg-slate-900 dark:bg-canva-blue text-white text-[10px] font-bold rounded-xl text-center">İndir</a>
+                    <div class="flex flex-col md:flex-row gap-1.5 mt-3">
+                        <button onclick="openViewer('${file.url}', '${file.name}', '${file.type}')" class="flex-1 py-1.5 md:py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-white text-[10px] font-bold rounded-xl active:bg-canva-purple active:text-white transition-all">Görüntüle</button>
+                        <a href="${file.url}" target="_blank" download="${file.name}" class="flex-1 py-1.5 md:py-2 bg-slate-900 dark:bg-canva-blue text-white text-[10px] font-bold rounded-xl text-center">İndir</a>
                     </div>
                 </div>`).join('');
         }
@@ -260,29 +346,77 @@
         function getFilePreview(file) {
             const t = (file.type || '').toLowerCase();
             if (t.includes('image')) return `<img src="${file.url}" class="w-full h-full object-cover">`;
-            if (t.includes('pdf')) return `<i class="fas fa-file-pdf text-4xl text-red-500"></i>`;
-            return `<i class="fas fa-file text-4xl text-slate-300"></i>`;
+            if (t.includes('pdf')) return `<i class="fas fa-file-pdf text-3xl md:text-4xl text-red-500"></i>`;
+            if (t.includes('video')) return `<i class="fas fa-play-circle text-3xl md:text-4xl text-purple-500"></i>`;
+            return `<i class="fas fa-file text-3xl md:text-4xl text-slate-300"></i>`;
         }
 
         function formatBytes(bytes) { if (bytes === 0) return '0 B'; const k = 1024, sizes = ['B', 'KB', 'MB', 'GB']; const i = Math.floor(Math.log(bytes) / Math.log(k)); return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]; }
 
         function openViewer(url, name, type) {
-            document.getElementById('viewerTitle').innerText = name;
-            document.getElementById('viewerDownloadBtn').href = url;
-            document.getElementById('viewerModal').classList.remove('hidden');
-            const content = document.getElementById('viewerContent');
-            if (type.includes('pdf')) content.innerHTML = `<iframe src="${url}#toolbar=0" style="width:100%; height:80vh; border-radius:12px;"></iframe>`;
-            else if (type.includes('image')) content.innerHTML = `<img src="${url}" class="max-w-full max-h-full object-contain rounded-lg">`;
-            else content.innerHTML = `<div class="text-center p-10"><i class="fas fa-eye-slash text-5xl text-slate-300 mb-4"></i><p class="text-slate-500">Önizleme desteklenmiyor.</p></div>`;
+            const viewerModal = document.getElementById('viewerModal');
+            const viewerTitle = document.getElementById('viewerTitle');
+            const downloadBtn = document.getElementById('viewerDownloadBtn');
+            const wrapper = document.getElementById('viewerFrameWrapper');
+            const pdfControls = document.getElementById('pdfControls');
+
+            if (!viewerModal || !viewerTitle || !downloadBtn || !wrapper || !pdfControls) return;
+
+            viewerTitle.innerText = name;
+            downloadBtn.href = url;
+            viewerModal.classList.remove('hidden');
+            
+            currentZoom = 1;
+            currentPdfUrl = url;
+            document.getElementById('zoomText').innerText = "100%";
+            wrapper.style.transform = "scale(1)";
+
+            const t = (type || '').toLowerCase();
+            if (t.includes('pdf')) {
+                pdfControls.classList.remove('hidden');
+                wrapper.innerHTML = `<iframe id="pdfIframe" src="${url}#toolbar=0&navpanes=0&scrollbar=0" style="width:100%; height:80vh; border-radius:12px; border:none; background: white; pointer-events: auto;"></iframe>`;
+                wrapper.classList.add('md:w-[800px]');
+            } else if (t.includes('image')) {
+                pdfControls.classList.add('hidden');
+                wrapper.innerHTML = `<img src="${url}" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl">`;
+                wrapper.classList.remove('md:w-[800px]');
+            } else {
+                pdfControls.classList.add('hidden');
+                wrapper.innerHTML = `<div class="text-center p-10"><i class="fas fa-eye-slash text-5xl text-slate-300 mb-4"></i><p class="text-slate-500 font-bold">Bu dosya önizlenemez.</p></div>`;
+            }
         }
-        function closeViewer() { document.getElementById('viewerModal').classList.add('hidden'); document.getElementById('viewerContent').innerHTML = ''; }
+
+        function zoomViewer(factor) {
+            currentZoom = Math.max(0.5, Math.min(3, currentZoom * factor));
+            const wrapper = document.getElementById('viewerFrameWrapper');
+            if (wrapper) wrapper.style.transform = `scale(${currentZoom})`;
+            document.getElementById('zoomText').innerText = Math.round(currentZoom * 100) + "%";
+        }
+
+        function printPDF() {
+            if (!currentPdfUrl) return;
+            const printWindow = window.open(currentPdfUrl, '_blank');
+            if (printWindow) {
+                printWindow.onload = () => printWindow.print();
+            }
+        }
+
+        function closeViewer() { 
+            const modal = document.getElementById('viewerModal');
+            if (modal) modal.classList.add('hidden'); 
+            const wrapper = document.getElementById('viewerFrameWrapper');
+            if (wrapper) wrapper.innerHTML = ''; 
+        }
 
         function handleFileSelect() {
             const file = document.getElementById('fileInput').files[0];
-            if (file) {
-                document.getElementById('customFileNameInput').value = file.name;
-                document.getElementById('selectedFileNameDisplay').innerText = file.name;
-                document.getElementById('uploadBtn').disabled = false;
+            const nameInput = document.getElementById('customFileNameInput');
+            const display = document.getElementById('selectedFileNameDisplay');
+            const btn = document.getElementById('uploadBtn');
+            if (file && nameInput && display && btn) {
+                nameInput.value = file.name;
+                display.innerText = file.name;
+                btn.disabled = false;
             }
         }
 
@@ -293,7 +427,7 @@
 
         async function uploadFile() {
             const input = document.getElementById('fileInput');
-            if (!input.files[0]) return;
+            if (!input || !input.files[0]) return;
             const file = input.files[0];
             const visibleName = document.getElementById('customFileNameInput').value.trim() || file.name;
             const storagePath = `${Date.now()}_${sanitizeForStorage(file.name)}`;
@@ -308,30 +442,49 @@
                 const { data: uData } = _supabase.storage.from(STORAGE_BUCKET).getPublicUrl(storagePath);
                 await _supabase.from('files').insert([{ name: visibleName, size: file.size, type: file.type, url: uData.publicUrl, category: document.getElementById('uploadCategorySelect').value }]);
                 updateProgress(100);
-                showToast("Yüklendi!");
+                showToast("Buluta eklendi!");
                 resetUploadForm();
                 fetchData();
-            } catch (e) { showToast("Hata: RLS veya dosya adı sorunu.", "error"); resetUploadForm(); }
+            } catch (e) { showToast("Yükleme başarısız!", "error"); resetUploadForm(); }
         }
 
-        function updateProgress(v) { document.getElementById('progressBar').style.width = v + '%'; }
-        function resetUploadForm() { document.getElementById('fileInput').value = ''; document.getElementById('customFileNameInput').value = ''; document.getElementById('selectedFileNameDisplay').innerText = 'Seçim yok'; document.getElementById('uploadBtn').disabled = true; document.getElementById('uploadProgress').classList.add('hidden'); }
+        function updateProgress(v) { 
+            const bar = document.getElementById('progressBar');
+            if (bar) bar.style.width = v + '%'; 
+        }
+
+        function resetUploadForm() { 
+            const input = document.getElementById('fileInput');
+            const nameInput = document.getElementById('customFileNameInput');
+            const display = document.getElementById('selectedFileNameDisplay');
+            const btn = document.getElementById('uploadBtn');
+            const progress = document.getElementById('uploadProgress');
+            if (input) input.value = ''; 
+            if (nameInput) nameInput.value = ''; 
+            if (display) display.innerText = 'Seçim yok'; 
+            if (btn) btn.disabled = true; 
+            if (progress) progress.classList.add('hidden'); 
+        }
 
         async function addCategory() {
-            const n = document.getElementById('newCategoryInput').value.trim();
+            const nInput = document.getElementById('newCategoryInput');
+            const n = nInput.value.trim();
             if (!n) return;
             await _supabase.from('categories').insert([{ name: n }]);
-            document.getElementById('newCategoryInput').value = ''; fetchData();
+            nInput.value = ''; fetchData();
+            showToast("Kategori eklendi.");
         }
+        
         function renderCategoryManagement() {
             document.getElementById('categoryListContainer').innerHTML = allCategories.map(cat => `
-                <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 animate-fade-in">
                     <span class="text-xs font-bold">${cat.name}</span>
-                    <button onclick="deleteCategory('${cat.id}')" class="text-red-400"><i class="fas fa-times-circle"></i></button>
+                    <button onclick="deleteCategory('${cat.id}')" class="text-red-400 hover:scale-110"><i class="fas fa-times-circle"></i></button>
                 </div>`).join('');
         }
-        async function deleteCategory(id) { await _supabase.from('categories').delete().eq('id', id); fetchData(); }
-        async function deleteFile(id) { if (confirm("Silinsin mi?")) { await _supabase.from('files').delete().eq('id', id); fetchData(); } }
+        
+        async function deleteCategory(id) { if(confirm("Kategoriyi sil?")) { await _supabase.from('categories').delete().eq('id', id); fetchData(); } }
+        async function deleteFile(id) { if (confirm("Kalıcı olarak silinsin mi?")) { await _supabase.from('files').delete().eq('id', id); fetchData(); } }
         function showToast(m, t = "success") { const toast = document.getElementById('toast'); document.getElementById('toastMessage').innerText = m; toast.classList.remove('translate-y-32', 'opacity-0'); setTimeout(() => toast.classList.add('translate-y-32', 'opacity-0'), 3000); }
     </script>
 </body>
