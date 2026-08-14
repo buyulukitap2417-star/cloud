@@ -666,6 +666,9 @@
         }
 
         function navigateToFolder(folderId, folderName) {
+            // HTML'den gelen 'null' string'ini gerçek null değerine çevirerek döngüyü engelle
+            if (folderId === 'null') folderId = null;
+
             // Eğer zaten o klasördeysek bir şey yapma
             if (currentFolderId === folderId) return;
 
