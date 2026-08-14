@@ -6,6 +6,8 @@
     <title>MATOTA Cloud | Modern Dosya Arşivi</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
         tailwind.config = {
@@ -151,11 +153,17 @@
                                 </div>
                             </div>
                             <div class="text-[10px] text-slate-400 font-semibold px-1">
-                                <i class="fas fa-info-circle text-purple-500 mr-1"></i> Görseller otomatik küçültülür. Maksimum yükleme limiti 50MB'dir.
+                                <i class="fas fa-info-circle text-purple-500 mr-1"></i> Görseller ve PDF'ler yükleme öncesinde otomatik küçültülür. Maksimum yükleme limiti 50MB'dir.
                             </div>
                             <button id="uploadBtn" disabled onclick="uploadFile()" class="canva-gradient text-white w-full py-4 rounded-2xl font-extrabold shadow-xl transition-all active:scale-95">MATOTA'ya Aktar</button>
-                            <div id="uploadProgress" class="hidden h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                <div id="progressBar" class="canva-gradient h-full transition-all duration-300" style="width: 0%"></div>
+                            <div id="uploadProgress" class="hidden space-y-1">
+                                <div class="flex justify-between text-[10px] font-bold text-slate-400">
+                                    <span id="uploadStatusText">İşleniyor...</span>
+                                    <span id="uploadPercentText">0%</span>
+                                </div>
+                                <div class="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                    <div id="progressBar" class="canva-gradient h-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -222,6 +230,11 @@
         const STORAGE_BUCKET = "archives";
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         const ADMIN_PASS = "AliSengul77MatotaOnline";
+
+        // Configure PDF.js Worker
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
 
         let allFiles = [], allCategories = [], isAdmin = false, currentFilter = 'all';
         let currentZoom = 1;
@@ -472,14 +485,247 @@
                 const file = fileInput.files[0];
                 document.getElementById('customFileNameInput').value = file.name;
                 
+                const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
                 const isOverLimit = file.size > 50 * 1024 * 1024;
+                
                 if (display) {
-                    display.innerText = `${formatBytes(file.size)} ${isOverLimit && !file.type.startsWith('image/') ? '⚠️ (50MB Sınırı Aşıldı)' : ''}`;
-                    display.className = `text-[10px] font-bold truncate italic ${isOverLimit && !file.type.startsWith('image/') ? 'text-red-500' : 'opacity-50'}`;
+                    let text = formatBytes(file.size);
+                    if (isOverLimit) {
+                        if (isPdf) {
+                            text += ' ⚡ (Küçültülüp yüklenecek)';
+                        } else if (!file.type.startsWith('image/')) {
+                            text += ' ⚠️ (50MB Sınırı Aşıldı)';
+                        }
+                    }
+                    display.innerText = text;
+                    display.className = `text-[10px] font-bold truncate italic ${isOverLimit ? 'text-amber-500' : 'opacity-50'}`;
                 }
                 
                 document.getElementById('uploadBtn').disabled = false;
             }
+        }
+
+        // --- Otomatik PDF Sıkıştırma Motoru ---
+        async function compressPdfIfNeeded(file, onProgress) {
+            if (!file || !(file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'))) {
+                return file;
+            }
+
+            try {
+                if (typeof pdfjsLib === 'undefined' || typeof PDFLib === 'undefined') {
+                    console.warn("PDF kütüphaneleri yüklenemedi, orijinal dosya kullanılıyor.");
+                    return file;
+                }
+
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                const numPages = pdf.numPages;
+
+                const { PDFDocument } = PDFLib;
+                const newPdfDoc = await PDFDocument.create();
+
+                for (let i = 1; i <= numPages; i++) {
+                    if (onProgress) {
+                        const pagePct = Math.round((i / numPages) * 100);
+                        onProgress(pagePct, `PDF Küçültülüyor... (${i}/${numPages} Sayfa)`);
+                    }
+
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: 1.1 });
+
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+                    // Canvas görüntüsünü kaliteli JPEG olarak sıkıştır
+                    const jpegUrl = canvas.toDataURL('image/jpeg', 0.60);
+                    const jpegImageBytes = await fetch(jpegUrl).then(res => res.arrayBuffer());
+
+                    const embeddedImage = await newPdfDoc.embedJpg(jpegImageBytes);
+                    const newPage = newPdfDoc.addPage([viewport.width, viewport.height]);
+                    newPage.drawImage(embeddedImage, {
+                        x: 0,
+                        y: 0,
+                        width: viewport.width,
+                        height: viewport.height,
+                    });
+                }
+
+                const pdfBytes = await newPdfDoc.save();
+                const compressedFile = new File([pdfBytes], file.name, {
+                    type: 'application/pdf',
+                    lastModified: Date.now()
+                });
+
+                if (compressedFile.size < file.size) {
+                    const savedPct = Math.round((1 - (compressedFile.size / file.size)) * 100);
+                    showToast(`PDF %${savedPct} oranında küçültüldü! (${formatBytes(file.size)} → ${formatBytes(compressedFile.size)})`);
+                    return compressedFile;
+                }
+                return file;
+            } catch (err) {
+                console.error("PDF Sıkıştırma hatası:", err);
+                return file;
+            }
+        }
+
+        // --- Otomatik Görsel Sıkıştırma ---
+        function compressImageIfNeeded(file) {
+            return new Promise((resolve) => {
+                if (!file || !file.type.startsWith('image/')) {
+                    return resolve(file);
+                }
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const MAX_DIM = 2560;
+
+                        if (width > MAX_DIM || height > MAX_DIM) {
+                            if (width > height) {
+                                height = Math.round((height * MAX_DIM) / width);
+                                width = MAX_DIM;
+                            } else {
+                                width = Math.round((width * MAX_DIM) / height);
+                                height = MAX_DIM;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        canvas.toBlob((blob) => {
+                            if (blob && blob.size < file.size) {
+                                const compressedFile = new File([blob], file.name, {
+                                    type: 'image/jpeg',
+                                    lastModified: Date.now()
+                                });
+                                resolve(compressedFile);
+                            } else {
+                                resolve(file);
+                            }
+                        }, 'image/jpeg', 0.82);
+                    };
+                    img.onerror = () => resolve(file);
+                    img.src = e.target.result;
+                };
+                reader.onerror = () => resolve(file);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function sanitizeForStorage(name) {
+            const map = {'ç':'c','Ç':'C','ğ':'g','Ğ':'G','ı':'i','I':'i','İ':'i','ö':'o','Ö':'O','ş':'s','Ş':'S','ü':'u','Ü':'U'};
+            return name.replace(/[çÇğĞıIİöÖşŞüÜ]/g, m => map[m]).replace(/[^a-zA-Z0-9.-]/g, '-').replace(/-+/g, '-').toLowerCase();
+        }
+
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const customNameInput = document.getElementById('customFileNameInput');
+            if (!fileInput || !fileInput.files[0]) return;
+            
+            let file = fileInput.files[0];
+            const visibleName = customNameInput.value.trim() || file.name;
+            const MAX_SIZE = 50 * 1024 * 1024; // 50MB
+
+            document.getElementById('uploadProgress').classList.remove('hidden');
+            updateProgress(5, "Dosya taranıyor...");
+
+            // 1. Görsel Otomatik Sıkıştırma
+            if (file.type.startsWith('image/')) {
+                updateProgress(15, "Görsel optimize ediliyor...");
+                const compressed = await compressImageIfNeeded(file);
+                if (compressed.size < file.size) {
+                    file = compressed;
+                    showToast("Görsel otomatik olarak sıkıştırıldı.");
+                }
+            }
+
+            // 2. PDF Otomatik Sıkıştırma
+            if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                updateProgress(15, "PDF analiz ediliyor...");
+                const compressedPdf = await compressPdfIfNeeded(file, (pct, statusText) => {
+                    updateProgress(15 + Math.round(pct * 0.35), statusText);
+                });
+                file = compressedPdf;
+            }
+
+            // 3. 50MB Limit Kontrolü
+            if (file.size > MAX_SIZE) {
+                showToast("Dosya boyutu sıkıştırılmasına rağmen 50MB sınırını aşıyor!", "error");
+                resetUploadForm();
+                return;
+            }
+
+            const storagePath = `${Date.now()}_${sanitizeForStorage(file.name)}`;
+            updateProgress(55, "MATOTA Cloud'a aktarılıyor...");
+
+            try {
+                const fileBuffer = await file.arrayBuffer();
+                updateProgress(75, "Sunucuya yazılıyor...");
+
+                const { error: sErr } = await _supabase.storage
+                    .from(STORAGE_BUCKET)
+                    .upload(storagePath, fileBuffer, {
+                        contentType: file.type || 'application/octet-stream',
+                        upsert: true
+                    });
+
+                if (sErr) throw sErr;
+                
+                updateProgress(90, "Veritabanı güncelleniyor...");
+                const { data: uData } = _supabase.storage.from(STORAGE_BUCKET).getPublicUrl(storagePath);
+                
+                await _supabase.from('files').insert([{ 
+                    name: visibleName, 
+                    size: file.size, 
+                    type: file.type, 
+                    url: uData.publicUrl, 
+                    category: document.getElementById('uploadCategorySelect').value 
+                }]);
+
+                updateProgress(100, "Tamamlandı!");
+                showToast("MATOTA Cloud'a başarıyla yüklendi!");
+                resetUploadForm();
+                fetchData();
+            } catch (e) { 
+                console.error(e);
+                let errorMsg = "Yükleme hatası!";
+                if (e && e.message && e.message.includes("exceeded the maximum allowed size")) {
+                    errorMsg = "Dosya boyutu 50MB kova limitini aşıyor!";
+                } else if (e && e.message) {
+                    errorMsg = e.message;
+                }
+                showToast(errorMsg, "error"); 
+                resetUploadForm(); 
+            }
+        }
+
+        function updateProgress(v, statusText) { 
+            const bar = document.getElementById('progressBar');
+            const statusEl = document.getElementById('uploadStatusText');
+            const percentEl = document.getElementById('uploadPercentText');
+            if (bar) bar.style.width = v + '%'; 
+            if (statusEl && statusText) statusEl.innerText = statusText;
+            if (percentEl) percentEl.innerText = v + '%';
+        }
+
+        function resetUploadForm() { 
+            document.getElementById('fileInput').value = ''; 
+            document.getElementById('customFileNameInput').value = ''; 
+            document.getElementById('selectedFileNameDisplay').innerText = 'Seçim yok'; 
+            document.getElementById('selectedFileNameDisplay').className = 'text-[10px] font-bold truncate italic opacity-50';
+            document.getElementById('uploadBtn').disabled = true; 
+            document.getElementById('uploadProgress').classList.add('hidden'); 
+            updateProgress(0, "İşleniyor...");
         }
 
         // --- Otomatik Görsel Sıkıştırma (Client-side Image Compressor) ---
