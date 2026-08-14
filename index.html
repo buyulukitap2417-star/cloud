@@ -445,6 +445,7 @@
             await fetchItems(currentFolderId); // Verilerin yüklendiğinden emin olmak için bekleniyor
             renderBreadcrumbs(); // Öğeler yüklendikten ve currentFolderId ayarlandıktan sonra breadcrumbs render edilir
             handleInitialRouting(); // Ardından yönlendirme yapılır
+            renderBreadcrumbs();
         }
 
         function handleUnauthenticatedSession() {
@@ -811,6 +812,7 @@
                 document.getElementById('currentCategoryTitle').innerText = category === 'all' ? 'MATOTA Cloud' : category;
             }
 
+            setFilter(category);
             applyFilter();
 
             updateUrl(category);
@@ -819,6 +821,8 @@
         function setFilter(category, shouldUpdateUrl = true) {
             // Bu fonksiyon yönlendirme (routing) veya programatik olarak çağrılır.
             // Sadece durumu ve UI'ı günceller.
+        function setFilter(category) {
+            // Bu fonksiyon sadece arayüzdeki buton ve başlık gibi UI elemanlarını günceller.
             currentFilter = category;
 
             const isCategoryFilteringEnabled = currentFolderId === null;
@@ -833,6 +837,13 @@
             });
             if (shouldUpdateUrl) {
                 updateUrl(category);
+            const mBtn = document.getElementById(category === 'all' ? 'm-btn-all' : 'm-btn-' + category);
+            if(mBtn) { mBtn.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300'); mBtn.classList.add('bg-purple-100', 'text-purple-600'); }
+
+            if (!isCategoryFilteringEnabled) {
+                document.getElementById('currentCategoryTitle').innerText = breadcrumbTrail[breadcrumbTrail.length - 1].name;
+            } else {
+                document.getElementById('currentCategoryTitle').innerText = category === 'all' ? 'MATOTA Cloud' : category;
             }
         }
 
