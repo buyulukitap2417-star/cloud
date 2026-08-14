@@ -424,7 +424,7 @@
 
         function navigateToHome() {
             setFilter('all');
-            closeViewer();
+            if (document.getElementById('viewerModal').classList.contains('hidden')) return; closeViewer();
         }
 
         async function handleAuthenticatedSession(session) {
@@ -492,7 +492,7 @@
 
         function handleInitialRouting() {
             const hash = window.location.hash.substring(2);
-            if (!hash || hash === '/') { // Handle both empty hash and #/
+            if (!hash || hash === '/') {
                 setFilter('all', false);
                 return;
             }
@@ -530,7 +530,7 @@
             document.getElementById('adminPanel').classList.toggle('hidden', !isAdmin);
             document.getElementById('categoryManagementContainer').classList.toggle('hidden', currentFolderId !== null);
             updateAdminButtonVisibility();
-            // Klasör yapısı geldiği için kategori yönetimi sadece ana dizinde gösterilir.
+            
             if (currentFolderId !== null && isAdmin) {
                 showToast("Kategori yönetimi sadece ana dizinde yapılabilir.", "info");
             }
@@ -689,7 +689,7 @@
 
             renderBreadcrumbs();
             fetchItems(folderId);
-            setFilter('all', false); // Klasöre girince kategori filtresini sıfırla, URL'yi güncelleme
+            setFilter('all', false);
         }
 
         function renderBreadcrumbs() {
@@ -765,7 +765,7 @@
             const container = document.getElementById('dynamicCategories');
             if (!container) return;
             container.innerHTML = allCategories.map(cat => `
-                <button onclick="setFilter('${cat.name}')" id="btn-${cat.name}" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+                <button onclick="handleFilterChange('${cat.name}')" id="btn-${cat.name}" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
                     <i class="fas fa-folder w-5 text-center text-xs opacity-50"></i> ${cat.name}
                 </button>`).join('');
         }
@@ -774,7 +774,7 @@
             const container = document.getElementById('mobileCategories');
             if (!container) return;
             container.innerHTML = allCategories.map(cat => `
-                <button onclick="setFilter('${cat.name}')" id="m-btn-${cat.name}" class="mobile-cat-btn whitespace-nowrap px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold active:scale-95 transition-all">
+                <button onclick="handleFilterChange('${cat.name}')" id="m-btn-${cat.name}" class="mobile-cat-btn whitespace-nowrap px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold active:scale-95 transition-all">
                     ${cat.name || 'Bilinmeyen'}
                 </button>`).join('');
         }
@@ -784,10 +784,19 @@
             if (select) select.innerHTML = '<option value="Genel">Genel</option>' + allCategories.map(cat => `<option value="${cat.name}">${cat.name}</option>`).join('');
         }
 
+        function handleFilterChange(category) {
+            // Bu fonksiyon kullanıcı etkileşimiyle tetiklenir.
+            // URL'yi günceller ve ardından filtreyi uygular.
+            currentFilter = category;
+            updateUrl(category);
+            applyFilter();
+        }
+
         function setFilter(category, shouldUpdateUrl = true) {
+            // Bu fonksiyon yönlendirme (routing) veya programatik olarak çağrılır.
+            // Sadece durumu ve UI'ı günceller.
             currentFilter = category;
 
-            // Klasör görünümünde kategori filtrelemesi devre dışı bırakılır.
             const isCategoryFilteringEnabled = currentFolderId === null;
 
             document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
@@ -801,7 +810,6 @@
             const mBtn = document.getElementById(category === 'all' ? 'm-btn-all' : 'm-btn-' + category);
             if(mBtn) { mBtn.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300'); mBtn.classList.add('bg-purple-100', 'text-purple-600'); }
             
-            // Breadcrumb'daki son öğe klasör adını zaten gösteriyor.
             if (!isCategoryFilteringEnabled) {
                 document.getElementById('currentCategoryTitle').innerText = breadcrumbTrail[breadcrumbTrail.length - 1].name;
             } else {
@@ -810,7 +818,9 @@
 
             applyFilter();
 
-            if (shouldUpdateUrl) updateUrl(category);
+            if (shouldUpdateUrl) {
+                updateUrl(category);
+            }
         }
 
         function applyFilter() {
