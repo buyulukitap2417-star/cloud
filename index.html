@@ -522,6 +522,10 @@
                 showToast("Bu işlemi yapmaya yetkiniz yok.", "error");
                 return;
             }
+            if (!isAdminUser) {
+                showToast("Bu işlemi yapmaya yetkiniz yok.", "error");
+                return;
+            }
             const email = document.getElementById('inviteUserInput').value;
             if (!email) {
                 showToast("Davet edilecek e-posta adresi gerekli!", "error");
@@ -1010,6 +1014,10 @@
         }
 
         async function addCategory() {
+            if (!isAdminUser) {
+                showToast("Bu işlemi yapmaya yetkiniz yok.", "error");
+                return;
+            }
             const input = document.getElementById('newCategoryInput');
             if (!input.value.trim()) return;
             await _supabase.from('categories').insert([{ name: input.value.trim() }]);
@@ -1026,8 +1034,20 @@
                 </div>`).join('');
         }
         
-        async function deleteCategory(id) { if(confirm("Silinsin mi?")) { await _supabase.from('categories').delete().eq('id', id); fetchData(); } }
-        async function deleteFile(id) { if (confirm("Kalıcı olarak silinsin mi?")) { await _supabase.from('files').delete().eq('id', id); fetchData(); } }
+        async function deleteCategory(id) {
+            if (!isAdminUser) {
+                showToast("Bu işlemi yapmaya yetkiniz yok.", "error");
+                return;
+            }
+            if(confirm("Silinsin mi?")) { await _supabase.from('categories').delete().eq('id', id); fetchData(); }
+        }
+        async function deleteFile(id) {
+            if (!isAdminUser) {
+                showToast("Bu işlemi yapmaya yetkiniz yok.", "error");
+                return;
+            }
+            if (confirm("Kalıcı olarak silinsin mi?")) { await _supabase.from('files').delete().eq('id', id); fetchData(); }
+        }
         function showToast(m, t = "success") { const toast = document.getElementById('toast'); if(toast) { document.getElementById('toastMessage').innerText = m; toast.classList.remove('translate-y-32', 'opacity-0'); setTimeout(() => toast.classList.add('translate-y-32', 'opacity-0'), 3000); } }
         function formatBytes(bytes) { if (!bytes || bytes === 0) return '0 B'; const k = 1024, sizes = ['B', 'KB', 'MB', 'GB']; const i = Math.floor(Math.log(bytes) / Math.log(k)); return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]; }
     </script>
