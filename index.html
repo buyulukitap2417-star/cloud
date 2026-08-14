@@ -517,7 +517,7 @@
                     }
                 }
             } else { // If categorySlug is not found or is 'all' but not handled above
-                setFilter('all', false); // Default to 'all' if hash is invalid or just #/
+                setFilter('all'); // Default to 'all' if hash is invalid or just #/
             }
         }
 
@@ -818,9 +818,6 @@
 
             applyFilter();
 
-            if (shouldUpdateUrl) {
-                updateUrl(category);
-            }
         }
 
         function applyFilter() {
