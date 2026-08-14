@@ -414,7 +414,12 @@
             } else {
                 hash = "#/";
             }
-            window.location.hash = hash;
+
+            // Yalnızca yeni hash mevcut hash'ten farklıysa güncelle
+            // Bu, gereksiz hashchange olaylarını ve sonsuz döngüyü engeller.
+            if (window.location.hash !== hash) {
+                window.location.hash = hash;
+            }
         }
 
         function navigateToHome() {
