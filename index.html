@@ -142,13 +142,16 @@
                             </div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
-                                    <span class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Dosya Boyutu</span>
+                                    <span class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Dosya Boyutu (Max 50MB)</span>
                                     <p id="selectedFileNameDisplay" class="text-[10px] font-bold truncate italic opacity-50">Seçim yok</p>
                                 </div>
                                 <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
                                     <span class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Kategori</span>
                                     <select id="uploadCategorySelect" class="bg-transparent border-none outline-none text-xs font-bold w-full dark:text-white cursor-pointer"></select>
                                 </div>
+                            </div>
+                            <div class="text-[10px] text-slate-400 font-semibold px-1">
+                                <i class="fas fa-info-circle text-purple-500 mr-1"></i> Görseller otomatik küçültülür. Maksimum yükleme limiti 50MB'dir.
                             </div>
                             <button id="uploadBtn" disabled onclick="uploadFile()" class="canva-gradient text-white w-full py-4 rounded-2xl font-extrabold shadow-xl transition-all active:scale-95">MATOTA'ya Aktar</button>
                             <div id="uploadProgress" class="hidden h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -464,12 +467,69 @@
         // --- Dosya İşlemleri & Admin ---
         function handleFileSelect() {
             const fileInput = document.getElementById('fileInput');
+            const display = document.getElementById('selectedFileNameDisplay');
             if (fileInput && fileInput.files[0]) {
                 const file = fileInput.files[0];
                 document.getElementById('customFileNameInput').value = file.name;
-                document.getElementById('selectedFileNameDisplay').innerText = formatBytes(file.size);
+                
+                const isOverLimit = file.size > 50 * 1024 * 1024;
+                if (display) {
+                    display.innerText = `${formatBytes(file.size)} ${isOverLimit && !file.type.startsWith('image/') ? '⚠️ (50MB Sınırı Aşıldı)' : ''}`;
+                    display.className = `text-[10px] font-bold truncate italic ${isOverLimit && !file.type.startsWith('image/') ? 'text-red-500' : 'opacity-50'}`;
+                }
+                
                 document.getElementById('uploadBtn').disabled = false;
             }
+        }
+
+        // --- Otomatik Görsel Sıkıştırma (Client-side Image Compressor) ---
+        function compressImageIfNeeded(file) {
+            return new Promise((resolve) => {
+                if (!file || !file.type.startsWith('image/')) {
+                    return resolve(file);
+                }
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const MAX_DIM = 2560; // Max piksel genişliği/yüksekliği
+
+                        if (width > MAX_DIM || height > MAX_DIM) {
+                            if (width > height) {
+                                height = Math.round((height * MAX_DIM) / width);
+                                width = MAX_DIM;
+                            } else {
+                                width = Math.round((width * MAX_DIM) / height);
+                                height = MAX_DIM;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        canvas.toBlob((blob) => {
+                            if (blob && blob.size < file.size) {
+                                const compressedFile = new File([blob], file.name, {
+                                    type: 'image/jpeg',
+                                    lastModified: Date.now()
+                                });
+                                resolve(compressedFile);
+                            } else {
+                                resolve(file);
+                            }
+                        }, 'image/jpeg', 0.82);
+                    };
+                    img.onerror = () => resolve(file);
+                    img.src = e.target.result;
+                };
+                reader.onerror = () => resolve(file);
+                reader.readAsDataURL(file);
+            });
         }
 
         function sanitizeForStorage(name) {
@@ -482,18 +542,37 @@
             const customNameInput = document.getElementById('customFileNameInput');
             if (!fileInput || !fileInput.files[0]) return;
             
-            const file = fileInput.files[0];
+            let file = fileInput.files[0];
             const visibleName = customNameInput.value.trim() || file.name;
-            const storagePath = `${Date.now()}_${sanitizeForStorage(file.name)}`;
-            
+            const MAX_SIZE = 50 * 1024 * 1024; // 50MB Byte cinsinden
+
             document.getElementById('uploadProgress').classList.remove('hidden');
-            updateProgress(20);
-            
+            updateProgress(10);
+
+            // 1. Görselse otomatik sıkıştır
+            if (file.type.startsWith('image/')) {
+                updateProgress(25);
+                const compressed = await compressImageIfNeeded(file);
+                if (compressed.size < file.size) {
+                    file = compressed;
+                    showToast("Görsel otomatik olarak sıkıştırıldı.");
+                }
+            }
+
+            // 2. 50MB Limit Kontrolü
+            if (file.size > MAX_SIZE) {
+                showToast("Dosya boyutu 50MB sınırını aşıyor! Lütfen dosyayı küçülterek tekrar deneyin.", "error");
+                resetUploadForm();
+                return;
+            }
+
+            const storagePath = `${Date.now()}_${sanitizeForStorage(file.name)}`;
+            updateProgress(40);
+
             try {
-                // Dosyayı doğrudan disk akışı yerine belleğe (ArrayBuffer) alıyoruz.
-                // Bu işlem ERR_UPLOAD_FILE_CHANGED hatasını tamamen engeller.
+                // Belleğe alma yöntemi ile yükleme
                 const fileBuffer = await file.arrayBuffer();
-                updateProgress(40);
+                updateProgress(60);
 
                 const { error: sErr } = await _supabase.storage
                     .from(STORAGE_BUCKET)
@@ -502,9 +581,9 @@
                         upsert: true
                     });
 
-                if(sErr) throw sErr;
+                if (sErr) throw sErr;
                 
-                updateProgress(70);
+                updateProgress(85);
                 const { data: uData } = _supabase.storage.from(STORAGE_BUCKET).getPublicUrl(storagePath);
                 
                 await _supabase.from('files').insert([{ 
@@ -516,12 +595,18 @@
                 }]);
 
                 updateProgress(100);
-                showToast("Buluta yüklendi!");
+                showToast("MATOTA Cloud'a başarıyla yüklendi!");
                 resetUploadForm();
                 fetchData();
             } catch (e) { 
                 console.error(e);
-                showToast("Yükleme hatası!", "error"); 
+                let errorMsg = "Yükleme hatası!";
+                if (e && e.message && e.message.includes("exceeded the maximum allowed size")) {
+                    errorMsg = "Dosya boyutu 50MB kova limitini aşıyor!";
+                } else if (e && e.message) {
+                    errorMsg = e.message;
+                }
+                showToast(errorMsg, "error"); 
                 resetUploadForm(); 
             }
         }
