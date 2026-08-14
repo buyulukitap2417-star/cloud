@@ -512,7 +512,10 @@
                     }
                 }
             } else if (categorySlug === 'all') {
-                setFilter('all', false);
+                // hashchange'den geliyorsa URL'yi tekrar güncellememek için false gönder
+                if (event && event.type === 'hashchange') {
+                    setFilter('all', false);
+                }
             }
         }
 
