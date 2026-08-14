@@ -487,7 +487,7 @@
 
         function handleInitialRouting() {
             const hash = window.location.hash.substring(2);
-            if (!hash) {
+            if (!hash || hash === '/') { // Handle both empty hash and #/
                 setFilter('all', false);
                 return;
             }
@@ -511,11 +511,8 @@
                         openViewer(targetFile.url, targetFile.name, targetFile.type, false);
                     }
                 }
-            } else if (categorySlug === 'all') {
-                // hashchange'den geliyorsa URL'yi tekrar güncellememek için false gönder
-                if (event && event.type === 'hashchange') {
-                    setFilter('all', false);
-                }
+            } else { // If categorySlug is not found or is 'all' but not handled above
+                setFilter('all', false); // Default to 'all' if hash is invalid or just #/
             }
         }
 
@@ -687,7 +684,7 @@
 
             renderBreadcrumbs();
             fetchItems(folderId);
-            setFilter('all'); // Klasöre girince kategori filtresini sıfırla
+            setFilter('all', false); // Klasöre girince kategori filtresini sıfırla, URL'yi güncelleme
         }
 
         function renderBreadcrumbs() {
