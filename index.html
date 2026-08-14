@@ -57,6 +57,11 @@
         .cover-video { background: linear-gradient(135deg, #6a11cb, #2575fc); }
         .cover-archive { background: linear-gradient(135deg, #f2994a, #f2c94c); }
         .cover-generic { background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); }
+        .cover-folder { background-color: #f2f3f5; }
+        .dark .cover-folder { background-color: #1c1f26; }
+
+        .context-menu { transition: opacity 0.1s ease, transform 0.1s ease; }
+        .context-menu-item { transition: background-color 0.2s ease; }
     </style>
 </head>
 <body class="flex flex-col md:flex-row h-screen overflow-hidden bg-[#f2f3f5] text-slate-900 dark:bg-canva-dark dark:text-slate-100 relative">
@@ -124,7 +129,7 @@
             <section id="adminPanel" class="hidden mb-12 space-y-8 animate-fade-in md:max-w-4xl mx-auto">
                 <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
                     <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-canva-purple"><i class="fas fa-tags"></i> Kategori Yönetimi</h3>
-                    <div class="flex gap-3">
+                    <div class="flex gap-3" id="categoryManagementContainer">
                         <input type="text" id="newCategoryInput" placeholder="Yeni kategori adı..." class="flex-1 px-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-purple-500/20 dark:text-white text-sm">
                         <button onclick="addCategory()" class="bg-slate-900 dark:bg-canva-purple text-white px-6 py-2 rounded-xl font-bold">Ekle</button>
                     </div>
@@ -207,10 +212,20 @@
                 </div>
             </section>
 
-            <h2 id="currentCategoryTitle" class="text-xl md:text-2xl font-extrabold italic mb-6">MATOTA Cloud</h2>
+            <!-- Breadcrumbs Navigasyonu -->
+            <div id="breadcrumbContainer" class="flex items-center gap-2 text-sm font-bold text-slate-500 dark:text-slate-400 mb-4">
+                <!-- Breadcrumbs buraya gelecek -->
+            </div>
+
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="currentCategoryTitle" class="text-xl md:text-2xl font-extrabold italic">MATOTA Cloud</h2>
+                <button onclick="showCreateFolderModal()" class="canva-gradient text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-purple-500/20 hover:scale-105 transition-all items-center gap-2 flex">
+                    <i class="fas fa-folder-plus"></i> Yeni Klasör
+                </button>
+            </div>
             <div id="fileGrid" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 pb-20">
                 <div class="col-span-full py-40 text-center"><div class="inline-block w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div></div>
-            </div>
+            </div> 
         </div>
     </div>
 
@@ -223,15 +238,13 @@
                     <h3 id="viewerTitle" class="font-bold text-sm md:text-base truncate">Dosya</h3>
                 </div>
                 <div class="flex items-center gap-1 md:gap-3">
-                    <a id="viewerDownloadBtn" href="#" download class="w-9 h-9 flex items-center justify-center rounded-full bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-canva-purple transition-all"><i class="fas fa-download text-xs"></i></a>
+                    <a id="viewerDownloadBtn" href="#" download class="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-canva-purple transition-all"><i class="fas fa-download text-xs"></i></a>
                     <div id="pdfControls" class="hidden flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1 mr-2">
                         <button onclick="zoomViewer(0.9)" class="w-8 h-8 flex items-center justify-center hover:bg-white dark:hover:bg-slate-700 rounded-md transition-all"><i class="fas fa-search-minus text-xs"></i></button>
                         <span id="zoomText" class="text-[10px] font-bold px-2 w-10 text-center">100%</span>
                         <button onclick="zoomViewer(1.1)" class="w-8 h-8 flex items-center justify-center hover:bg-white dark:hover:bg-slate-700 rounded-md transition-all"><i class="fas fa-search-plus text-xs"></i></button>
-                        <div class="w-px h-4 bg-slate-300 dark:bg-slate-600 mx-1"></div>
-                        <button onclick="printPDF()" class="w-8 h-8 flex items-center justify-center hover:bg-white dark:hover:bg-slate-700 rounded-md transition-all text-blue-500"><i class="fas fa-print text-xs"></i></button>
                     </div>
-                    <button onclick="closeViewer()" class="w-9 h-9 flex items-center justify-center rounded-full bg-slate-50 dark:bg-slate-800 hover:text-red-500 transition-all"><i class="fas fa-times"></i></button>
+                    <button onclick="closeViewer()" class="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 hover:text-red-500 transition-all"><i class="fas fa-times"></i></button>
                 </div>
             </div>
             <div id="viewerContent" class="flex-1 overflow-auto bg-slate-200 dark:bg-slate-950 flex items-start justify-center p-2 md:p-4">
@@ -290,6 +303,57 @@
          The current page will just handle the initial login/signup.
     -->
 
+    <!-- Yeni Klasör Modalı -->
+    <div id="createFolderModal" class="fixed inset-0 z-[160] modal-blur hidden flex items-center justify-center p-6">
+        <div class="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-sm p-10 animate-fade-in relative overflow-hidden text-center">
+            <div class="absolute top-0 left-0 w-full h-2 canva-gradient"></div>
+            <div class="w-16 h-16 bg-purple-50 dark:bg-purple-900/20 text-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6"><i class="fas fa-folder-plus text-2xl"></i></div>
+            <h3 class="text-xl font-extrabold uppercase italic mb-6">Yeni Klasör Oluştur</h3>
+            <input type="text" id="newFolderNameInput" placeholder="Klasör adı" class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl outline-none text-center font-bold dark:text-white mb-6">
+            <div class="flex flex-col gap-3 mt-6">
+                <button onclick="handleCreateFolder()" class="canva-gradient text-white w-full py-4 rounded-2xl font-extrabold shadow-xl transition-all">Oluştur</button>
+                <button onclick="closeCreateFolderModal()" class="text-slate-400 text-xs font-bold py-2">İptal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sağ Tıklama Menüsü -->
+    <div id="contextMenu" class="context-menu fixed z-[200] bg-white dark:bg-slate-800 shadow-2xl rounded-2xl p-2 w-48 border border-slate-100 dark:border-slate-700 opacity-0 pointer-events-none transform scale-95">
+        <button onclick="handleContextAction('share')" class="context-menu-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-slate-600 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">
+            <i class="fas fa-user-plus w-5 text-center text-xs"></i> Paylaş
+        </button>
+        <button onclick="handleContextAction('rename')" class="context-menu-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-slate-600 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">
+            <i class="fas fa-pen w-5 text-center text-xs"></i> Yeniden Adlandır
+        </button>
+        <div class="h-px bg-slate-200 dark:bg-slate-700 my-1"></div>
+        <button onclick="handleContextAction('delete')" class="context-menu-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">
+            <i class="fas fa-trash-alt w-5 text-center text-xs"></i> Sil
+        </button>
+    </div>
+
+    <!-- Paylaşım (Yetki Yönetimi) Modalı -->
+    <div id="shareModal" class="fixed inset-0 z-[170] modal-blur hidden flex items-center justify-center p-6">
+        <div class="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-lg p-10 animate-fade-in relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-2 canva-gradient"></div>
+            <div class="flex items-center gap-3 mb-6">
+                <i id="shareItemIcon" class="fas fa-file text-2xl text-slate-400"></i>
+                <h3 id="shareItemName" class="text-xl font-extrabold">İzinleri Yönet</h3>
+            </div>
+            <p class="text-sm text-slate-500 mb-4">Kullanıcıları e-posta ile davet ederek görüntüleme veya düzenleme yetkisi verin.</p>
+            <div class="flex gap-3 mb-6">
+                <input type="email" id="shareUserEmail" placeholder="Paylaşılacak e-posta..." class="flex-1 px-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 dark:text-white text-sm">
+                <select id="sharePermissionLevel" class="bg-slate-50 dark:bg-slate-800 border-none rounded-xl outline-none text-sm font-bold px-3 dark:text-white">
+                    <option value="viewer">Görüntüleyici</option>
+                    <option value="editor">Düzenleyici</option>
+                </select>
+                <button onclick="handleShareItem()" class="bg-slate-900 dark:bg-canva-blue text-white px-6 py-2 rounded-xl font-bold">Ekle</button>
+            </div>
+            <h4 class="text-xs font-bold uppercase text-slate-400 mb-2">Mevcut İzinler</h4>
+            <div id="permissionList" class="space-y-2 max-h-48 overflow-y-auto"></div>
+            <button onclick="closeShareModal()" class="text-slate-400 text-xs font-bold py-2 mt-6 w-full text-center">Kapat</button>
+        </div>
+    </div>
+
     <!-- Bildirim -->
     <div id="toast" class="fixed bottom-10 right-1/2 translate-x-1/2 md:translate-x-0 md:right-10 transform translate-y-32 opacity-0 transition-all duration-500 pointer-events-none z-[200] w-[90%] md:w-auto">
         <div class="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4">
@@ -299,7 +363,8 @@
 
     <script>
         const SUPABASE_URL = "https://xtmnfpfnxsgemjejmpaq.supabase.co";
-        const SUPABASE_KEY = "sb_publishable_AFhTTSw30vvy42C1tBkW2Q_suUE1u3G";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0bW5mcGZueHNnZW1qZWptcGFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTU2MzQ1NDIsImV4cCI6MjAxMTIxMDU0Mn0.AFhTTSw30vvy42C1tBkW2Q_suUE1u3G-bsWj2hA32-w";
+        const STORAGE_BUCKET = "archives";
         const MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50MB Limit
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -308,9 +373,12 @@
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         }
 
-        let allFiles = [], allCategories = [], isAdmin = false, currentFilter = 'all';
+        let allItems = [], allCategories = [], isAdmin = false, currentFilter = 'all';
         let currentZoom = 1, currentPdfUrl = "";
         let currentUserEmail = null, isAdminUser = false;
+        let currentFolderId = null; // null = root
+        let breadcrumbTrail = [{ id: null, name: 'MATOTA Cloud' }];
+        let contextTarget = null; // Sağ tıklanan öğenin bilgilerini tutar
 
         // File State for 2-step Compression & Upload
         let rawFile = null;
@@ -326,6 +394,12 @@
                 }
             });
             window.addEventListener('hashchange', () => { handleInitialRouting(); });
+            document.addEventListener('click', (e) => {
+                if (!document.getElementById('contextMenu').contains(e.target)) {
+                    hideContextMenu();
+                }
+            });
+            document.getElementById('fileGrid').addEventListener('contextmenu', e => e.preventDefault());
         };
 
         function updateUrl(category, fileName = null) {
@@ -358,7 +432,7 @@
             
             showAppContent();
             updateAdminButtonVisibility();
-            fetchData().then(() => {
+            fetchItems(currentFolderId).then(() => {
                 handleInitialRouting();
             });
         }
@@ -418,13 +492,13 @@
             const fileSlug = parts[1];
 
             const targetCategory = allCategories.find(c => 
-                c.name.toLowerCase().replace(/ /g, '-') === categorySlug
+                c.name?.toLowerCase().replace(/ /g, '-') === categorySlug
             );
 
             if (targetCategory) {
                 setFilter(targetCategory.name, false);
                 if (fileSlug) {
-                    const targetFile = allFiles.find(f => 
+                    const targetFile = allItems.find(f => 
                         f.category === targetCategory.name && 
                         f.name.toLowerCase().replace(/ /g, '-') === fileSlug
                     );
@@ -444,7 +518,12 @@
         function toggleAdminView() {
             isAdmin = !isAdmin;
             document.getElementById('adminPanel').classList.toggle('hidden', !isAdmin);
+            document.getElementById('categoryManagementContainer').classList.toggle('hidden', currentFolderId !== null);
             updateAdminButtonVisibility();
+            // Klasör yapısı geldiği için kategori yönetimi sadece ana dizinde gösterilir.
+            if (currentFolderId !== null && isAdmin) {
+                showToast("Kategori yönetimi sadece ana dizinde yapılabilir.", "info");
+            }
             if(isAdmin) renderCategoryManagement();
         }
 
@@ -522,10 +601,6 @@
                 showToast("Bu işlemi yapmaya yetkiniz yok.", "error");
                 return;
             }
-            if (!isAdminUser) {
-                showToast("Bu işlemi yapmaya yetkiniz yok.", "error");
-                return;
-            }
             const email = document.getElementById('inviteUserInput').value;
             if (!email) {
                 showToast("Davet edilecek e-posta adresi gerekli!", "error");
@@ -551,28 +626,128 @@
             }
         }
 
-        // Modified fetchData to only run if authenticated
-        async function fetchData() {
+        async function fetchItems(folderId = null) {
             if (!currentUserEmail) {
                 console.log("Not authenticated, skipping data fetch.");
                 return;
             }
-            renderFiles(allFiles);
-            if(isAdmin) renderCategoryManagement();
-        }
+            document.getElementById('fileGrid').innerHTML = `<div class="col-span-full py-40 text-center"><div class="inline-block w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div></div>`;
 
-        async function fetchData() {
             try {
-                const { data: catData } = await _supabase.from('categories').select('*').order('name');
-                allCategories = catData || [];
-                renderSidebarCategories();
-                renderMobileCategories();
-                renderUploadCategories();
-                const { data: fileData } = await _supabase.from('files').select('*').order('created_at', { ascending: false });
-                allFiles = fileData || [];
+                // Kategoriler sadece bir kez ve ana dizindeyken çekilir.
+                if (folderId === null) {
+                    const { data: catData } = await _supabase.from('categories').select('*').order('name');
+                    allCategories = catData || [];
+                    renderSidebarCategories();
+                    renderMobileCategories();
+                    renderUploadCategories();
+                }
+
+                let query = _supabase.from('files').select('*');
+                if (folderId) {
+                    query = query.eq('parent_id', folderId);
+                } else {
+                    query = query.is('parent_id', null);
+                }
+                
+                const { data: fileData, error } = await query.order('is_folder', { ascending: false }).order('name', { ascending: true });
+
+                if (error) throw error;
+
+                allItems = fileData || [];
                 applyFilter();
                 return true;
-            } catch (e) { console.error(e); return false; }
+            } catch (e) { console.error("Fetch Error:", e); return false; }
+        }
+
+        function navigateToFolder(folderId, folderName) {
+            // Eğer zaten o klasördeysek bir şey yapma
+            if (currentFolderId === folderId) return;
+
+            currentFolderId = folderId;
+            
+            // Breadcrumb güncelle
+            const existingIndex = breadcrumbTrail.findIndex(b => b.id === folderId);
+            if (existingIndex !== -1) {
+                breadcrumbTrail = breadcrumbTrail.slice(0, existingIndex + 1);
+            } else {
+                breadcrumbTrail.push({ id: folderId, name: folderName });
+            }
+
+            renderBreadcrumbs();
+            fetchItems(folderId);
+            setFilter('all'); // Klasöre girince kategori filtresini sıfırla
+        }
+
+        function renderBreadcrumbs() {
+            const container = document.getElementById('breadcrumbContainer');
+            container.innerHTML = breadcrumbTrail.map((crumb, index) => {
+                if (index === breadcrumbTrail.length - 1) {
+                    return `<span class="text-slate-800 dark:text-white">${crumb.name}</span>`;
+                }
+                return `<button onclick="navigateToFolder('${crumb.id}', '${crumb.name}')" class="hover:underline">${crumb.name}</button> <i class="fas fa-chevron-right text-xs opacity-50"></i>`;
+            }).join('');
+        }
+
+        function showCreateFolderModal() {
+            document.getElementById('createFolderModal').classList.remove('hidden');
+            document.getElementById('newFolderNameInput').focus();
+        }
+
+        function closeCreateFolderModal() {
+            document.getElementById('createFolderModal').classList.add('hidden');
+            document.getElementById('newFolderNameInput').value = '';
+        }
+
+        async function handleCreateFolder() {
+            const name = document.getElementById('newFolderNameInput').value.trim();
+            if (!name) {
+                showToast("Klasör adı boş olamaz!", "error");
+                return;
+            }
+
+            const { data, error } = await _supabase.from('files').insert({
+                name: name,
+                is_folder: true,
+                parent_id: currentFolderId,
+                owner_id: _supabase.auth.getUser().id // Bu satırda hata alabilirsiniz, düzeltildi.
+            }).select();
+
+            if (error) {
+                console.error("Klasör oluşturma hatası:", error);
+                showToast(`Hata: ${error.message}`, "error");
+            } else {
+                showToast(`'${name}' klasörü oluşturuldu!`, "success");
+                closeCreateFolderModal();
+                fetchItems(currentFolderId);
+            }
+        }
+
+        // Bu fonksiyonu çağırmadan önce `_supabase.auth.getUser()`'ın sonucunu kontrol etmek daha güvenli.
+        // handleAuthenticatedSession içinde `session.user.id` zaten var, onu kullanmak daha iyi.
+        // Örnek: owner_id: session.user.id
+        _supabase.auth.getUser().then(response => {
+            if(response.data.user) {
+                // console.log("Current user ID:", response.data.user.id);
+            }
+        });
+
+        function handleItemRightClick(event, item) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            contextTarget = item; // Tıklanan öğeyi global değişkene ata
+
+            const menu = document.getElementById('contextMenu');
+            menu.style.left = `${event.clientX}px`;
+            menu.style.top = `${event.clientY}px`;
+            menu.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+        }
+
+        function hideContextMenu() {
+            const menu = document.getElementById('contextMenu');
+            menu.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
+            contextTarget = null;
         }
 
         function renderSidebarCategories() {
@@ -589,7 +764,7 @@
             if (!container) return;
             container.innerHTML = allCategories.map(cat => `
                 <button onclick="setFilter('${cat.name}')" id="m-btn-${cat.name}" class="mobile-cat-btn whitespace-nowrap px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold active:scale-95 transition-all">
-                    ${cat.name}
+                    ${cat.name || 'Bilinmeyen'}
                 </button>`).join('');
         }
 
@@ -600,6 +775,10 @@
 
         function setFilter(category, shouldUpdateUrl = true) {
             currentFilter = category;
+
+            // Klasör görünümünde kategori filtrelemesi devre dışı bırakılır.
+            const isCategoryFilteringEnabled = currentFolderId === null;
+
             document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
             const sBtn = document.getElementById(category === 'all' ? 'btn-all' : 'btn-' + category);
             if(sBtn) sBtn.classList.add('active');
@@ -611,59 +790,92 @@
             const mBtn = document.getElementById(category === 'all' ? 'm-btn-all' : 'm-btn-' + category);
             if(mBtn) { mBtn.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300'); mBtn.classList.add('bg-purple-100', 'text-purple-600'); }
             
-            document.getElementById('currentCategoryTitle').innerText = category === 'all' ? 'MATOTA Cloud' : category;
+            // Breadcrumb'daki son öğe klasör adını zaten gösteriyor.
+            if (!isCategoryFilteringEnabled) {
+                document.getElementById('currentCategoryTitle').innerText = breadcrumbTrail[breadcrumbTrail.length - 1].name;
+            } else {
+                document.getElementById('currentCategoryTitle').innerText = category === 'all' ? 'MATOTA Cloud' : category;
+            }
+
             applyFilter();
 
             if (shouldUpdateUrl) updateUrl(category);
         }
 
         function applyFilter() {
-            let filtered = allFiles.filter(f => f.name.toLowerCase().includes(document.getElementById('searchInput').value.toLowerCase()));
-            if (currentFilter !== 'all') filtered = filtered.filter(f => f.category === currentFilter);
-            renderFiles(filtered);
+            let filtered = allItems.filter(f => f.name.toLowerCase().includes(document.getElementById('searchInput').value.toLowerCase()));
+            
+            // Kategori filtrelemesi sadece ana dizinde (root) aktif.
+            if (currentFolderId === null && currentFilter !== 'all') {
+                filtered = filtered.filter(f => f.category === currentFilter);
+            }
+
+            renderItems(filtered);
         }
 
         function filterFiles() { applyFilter(); }
 
-        function getFileCover(file) {
-            const type = (file.type || '').toLowerCase();
-            if (type.includes('image')) return `<img src="${file.url}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">`;
+        function getItemCover(item) {
+            if (item.is_folder) {
+                return `
+                <div class="w-full h-full cover-folder flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 p-4 relative text-center">
+                    <i class="fas fa-folder text-5xl"></i>
+                </div>`;
+            }
+
+            const type = (item.type || '').toLowerCase();
+            if (type.includes('image')) return `<img src="${item.url}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">`;
 
             let coverClass = "cover-generic";
             let icon = "fa-file-alt";
             if (type.includes('pdf')) { coverClass = "cover-pdf"; icon = "fa-file-pdf"; }
             else if (type.includes('video')) { coverClass = "cover-video"; icon = "fa-play-circle"; }
             else if (type.includes('zip') || type.includes('rar') || type.includes('7z')) { coverClass = "cover-archive"; icon = "fa-file-archive"; }
+            else if (type.includes('text')) { icon = "fa-file-alt"; }
 
             return `
                 <div class="w-full h-full ${coverClass} flex flex-col items-center justify-center text-white p-4 relative text-center">
                     <i class="fas ${icon} text-3xl mb-2 opacity-30"></i>
-                    <span class="text-2xl md:text-3xl font-black tracking-tighter opacity-90 leading-tight break-words px-2">${file.name}</span>
+                    <span class="text-2xl md:text-3xl font-black tracking-tighter opacity-90 leading-tight break-words px-2">${item.name}</span>
                 </div>`;
         }
 
-        function renderFiles(files) {
+        function renderItems(items) {
             const grid = document.getElementById('fileGrid');
             if (!grid) return;
-            if (files.length === 0) { grid.innerHTML = `<div class="col-span-full py-32 text-center text-slate-400"><i class="fas fa-cloud-moon text-5xl mb-4"></i><p class="text-xs font-bold uppercase tracking-widest">Henüz Dosya Yok</p></div>`; return; }
-            grid.innerHTML = files.map(file => `
-                <div class="file-card bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col group relative animate-fade-in">
-                    ${isAdmin ? `<button onclick="deleteFile('${file.id}')" class="absolute top-3 right-3 w-8 h-8 bg-black/20 hover:bg-red-500 text-white backdrop-blur-md rounded-full z-10 transition-all"><i class="fas fa-trash-alt text-[10px]"></i></button>` : ''}
-                    <div class="aspect-[4/3] w-full overflow-hidden cursor-pointer" onclick="openViewer('${file.url}', '${file.name}', '${file.type}')">
-                        ${getFileCover(file)}
+            if (items.length === 0) { grid.innerHTML = `<div class="col-span-full py-32 text-center text-slate-400"><i class="fas fa-folder-open text-5xl mb-4"></i><p class="text-xs font-bold uppercase tracking-widest">Bu Klasör Boş</p></div>`; return; }
+            grid.innerHTML = items.map(item => {
+                const clickAction = item.is_folder 
+                    ? `navigateToFolder('${item.id}', '${item.name}')` 
+                    : `openViewer('${item.url}', '${item.name}', '${item.type}')`;
+
+                const downloadButton = !item.is_folder ? `
+                    <a href="${item.url}" target="_blank" download="${item.name}" class="flex-1 py-2 bg-slate-900 dark:bg-canva-blue text-white text-[9px] md:text-[10px] font-bold rounded-xl text-center flex items-center justify-center"><i class="fas fa-download mr-1 text-[8px]"></i> İNDİR</a>
+                ` : `
+                    <button onclick="${clickAction}" class="flex-1 py-2 bg-slate-900 dark:bg-canva-blue text-white text-[9px] md:text-[10px] font-bold rounded-xl text-center flex items-center justify-center">AÇ</button>
+                `;
+
+                return `
+                <div class="file-card bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col group relative animate-fade-in" oncontextmenu="handleItemRightClick(event, ${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                    <div class="aspect-[4/3] w-full overflow-hidden cursor-pointer" ondblclick="${clickAction}">
+                        ${getItemCover(item)}
                     </div>
                     <div class="p-3 md:p-4 flex-1">
-                        <h3 class="font-bold text-[11px] md:text-sm truncate dark:text-white mb-1" title="${file.name}">${file.name}</h3>
+                        <div class="flex items-start gap-2">
+                            <i class="fas ${item.is_folder ? 'fa-folder text-amber-500' : 'fa-file-alt text-slate-400'} mt-1 text-xs"></i>
+                            <h3 class="font-bold text-[11px] md:text-sm truncate dark:text-white mb-1 flex-1" title="${item.name}">${item.name}</h3>
+                        </div>
                         <div class="flex justify-between items-center text-[9px] text-slate-400 font-bold italic opacity-70">
-                            <span>${formatBytes(file.size)}</span>
-                            <span class="uppercase">${file.category || 'Genel'}</span>
+                            <span>${!item.is_folder ? formatBytes(item.size) : ''}</span>
+                            <span class="uppercase">${item.category || ''}</span>
                         </div>
                         <div class="flex gap-1.5 md:gap-2 mt-4">
-                            <button onclick="openViewer('${file.url}', '${file.name}', '${file.type}')" class="flex-1 py-2 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-white text-[9px] md:text-[10px] font-bold rounded-xl active:bg-canva-purple active:text-white transition-all">GÖSTER</button>
-                            <a href="${file.url}" target="_blank" download="${file.name}" class="flex-1 py-2 bg-slate-900 dark:bg-canva-blue text-white text-[9px] md:text-[10px] font-bold rounded-xl text-center flex items-center justify-center"><i class="fas fa-download mr-1 text-[8px]"></i> İNDİR</a>
+                            ${!item.is_folder ? `<button onclick="${clickAction}" class="flex-1 py-2 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-white text-[9px] md:text-[10px] font-bold rounded-xl active:bg-canva-purple active:text-white transition-all">GÖSTER</button>` : ''}
+                            ${downloadButton}
                         </div>
                     </div>
-                </div>`).join('');
+                </div>`;
+            }).join('');
         }
 
         function openViewer(url, name, type, shouldUpdateUrl = true) {
@@ -683,11 +895,19 @@
             const t = (type || '').toLowerCase();
             if (t.includes('pdf')) {
                 pdfControls.classList.remove('hidden');
-                wrapper.innerHTML = `<iframe id="pdfIframe" src="${url}#toolbar=0&navpanes=0&scrollbar=0" style="width:100%; height:80vh; border-radius:12px; border:none; background: white;"></iframe>`;
+                wrapper.innerHTML = `<iframe src="https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(url)}" class="w-full h-full border-none rounded-lg"></iframe>`;
                 wrapper.classList.add('md:w-[850px]');
             } else if (t.includes('image')) {
                 pdfControls.classList.add('hidden');
                 wrapper.innerHTML = `<img src="${url}" class="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl">`;
+                wrapper.classList.remove('md:w-[850px]');
+            } else if (t.includes('video')) {
+                pdfControls.classList.add('hidden');
+                wrapper.innerHTML = `<video controls autoplay class="max-w-full max-h-[80vh] rounded-lg shadow-2xl"><source src="${url}" type="${type}"></video>`;
+                wrapper.classList.remove('md:w-[850px]');
+            } else { // Diğer dosya türleri için (metin vb.)
+                pdfControls.classList.add('hidden');
+                wrapper.innerHTML = `<div class="p-8 bg-slate-100 dark:bg-slate-800 rounded-lg text-center"><i class="fas fa-file-alt text-5xl mb-4 text-slate-400"></i><p class="font-bold">Bu dosya türü için önizleme desteklenmiyor.</p><p class="text-sm text-slate-500 mt-2">Dosyayı indirmek için yukarıdaki indir butonunu kullanabilirsiniz.</p></div>`;
                 wrapper.classList.remove('md:w-[850px]');
             }
 
@@ -705,8 +925,6 @@
             document.getElementById('viewerFrameWrapper').style.transform = `scale(${currentZoom})`;
             document.getElementById('zoomText').innerText = Math.round(currentZoom * 100) + "%";
         }
-
-        function printPDF() { if (currentPdfUrl) window.open(currentPdfUrl, '_blank').print(); }
 
         function handleFileSelect() {
             const fileInput = document.getElementById('fileInput');
@@ -979,7 +1197,7 @@
                     url: uData.publicUrl, 
                     category: categorySelect ? categorySelect.value : "Genel" 
                 }]);
-                
+
                 updateUploadProgress(100, "Tamamlandı!");
                 showToast("Buluta başarıyla yüklendi!");
                 resetUploadForm();
@@ -1013,11 +1231,15 @@
             document.getElementById('fileStatusAlert').classList.add('hidden'); 
         }
 
+        // Admin yetkisi gerektiren fonksiyonlar
         async function addCategory() {
             if (!isAdminUser) {
                 showToast("Bu işlemi yapmaya yetkiniz yok.", "error");
                 return;
             }
+            // Kategori ekleme sadece ana dizinde
+            if (currentFolderId !== null) { showToast("Kategoriler sadece ana dizine eklenebilir.", "error"); return; }
+
             const input = document.getElementById('newCategoryInput');
             if (!input.value.trim()) return;
             await _supabase.from('categories').insert([{ name: input.value.trim() }]);
@@ -1039,14 +1261,107 @@
                 showToast("Bu işlemi yapmaya yetkiniz yok.", "error");
                 return;
             }
-            if(confirm("Silinsin mi?")) { await _supabase.from('categories').delete().eq('id', id); fetchData(); }
+            if(confirm("Bu kategoriyi silmek istediğinizden emin misiniz?")) { await _supabase.from('categories').delete().eq('id', id); fetchItems(currentFolderId); }
         }
-        async function deleteFile(id) {
-            if (!isAdminUser) {
-                showToast("Bu işlemi yapmaya yetkiniz yok.", "error");
+
+        async function handleContextAction(action) {
+            const item = contextTarget;
+            hideContextMenu();
+            if (!item) return;
+
+            switch(action) {
+                case 'delete':
+                    const message = item.is_folder ? `Klasörü ve içindeki tüm dosyaları kalıcı olarak silmek istediğinizden emin misiniz?` : `Bu dosyayı kalıcı olarak silmek istediğinizden emin misiniz?`;
+                    if (confirm(message)) {
+                        const { error } = await _supabase.from('files').delete().eq('id', item.id);
+                        if (error) {
+                            showToast(`Hata: ${error.message}`, "error");
+                        } else {
+                            showToast(`'${item.name}' silindi.`, "success");
+                            fetchItems(currentFolderId);
+                        }
+                    }
+                    break;
+                case 'rename':
+                    const newName = prompt(`'${item.name}' için yeni bir ad girin:`, item.name);
+                    if (newName && newName.trim() !== item.name) {
+                        const { error } = await _supabase.from('files').update({ name: newName.trim() }).eq('id', item.id);
+                        if (error) {
+                            showToast(`Hata: ${error.message}`, "error");
+                        } else {
+                            showToast("Yeniden adlandırıldı.", "success");
+                            fetchItems(currentFolderId);
+                        }
+                    }
+                    break;
+                case 'share':
+                    openShareModal(item);
+                    break;
+            }
+        }
+
+        async function openShareModal(item) {
+            contextTarget = item; // Paylaşılacak öğeyi sakla
+            document.getElementById('shareItemName').innerText = item.name;
+            document.getElementById('shareItemIcon').className = `fas ${item.is_folder ? 'fa-folder text-amber-500' : 'fa-file'} text-2xl text-slate-400`;
+            document.getElementById('shareModal').classList.remove('hidden');
+            
+            // Mevcut izinleri yükle
+            const permissionList = document.getElementById('permissionList');
+            permissionList.innerHTML = 'Yükleniyor...';
+            const { data, error } = await _supabase.from('item_permissions').select('id, user_id, permission_level, profiles(email)').eq('item_id', item.id);
+
+            if (error) {
+                permissionList.innerHTML = `<p class="text-red-500">İzinler yüklenemedi.</p>`;
                 return;
             }
-            if (confirm("Kalıcı olarak silinsin mi?")) { await _supabase.from('files').delete().eq('id', id); fetchData(); }
+            
+            if (data.length === 0) {
+                permissionList.innerHTML = `<p class="text-xs text-slate-400">Henüz kimseyle paylaşılmadı.</p>`;
+            } else {
+                permissionList.innerHTML = data.map(p => `
+                    <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded-lg">
+                        <span class="text-sm font-bold">${p.profiles.email}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-semibold text-slate-500">${p.permission_level}</span>
+                            <button onclick="removePermission('${p.id}')" class="text-red-400 hover:scale-110"><i class="fas fa-times-circle text-xs"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function closeShareModal() {
+            document.getElementById('shareModal').classList.add('hidden');
+            document.getElementById('shareUserEmail').value = '';
+            contextTarget = null;
+        }
+
+        async function handleShareItem() {
+            const email = document.getElementById('shareUserEmail').value;
+            const permission_level = document.getElementById('sharePermissionLevel').value;
+            if (!email || !contextTarget) return;
+
+            // E-postadan kullanıcı ID'sini bul
+            const { data: userData, error: userError } = await _supabase.from('profiles').select('id').eq('email', email).single();
+            if (userError || !userData) {
+                showToast("Bu e-postaya sahip bir kullanıcı bulunamadı.", "error");
+                return;
+            }
+
+            const { error } = await _supabase.from('item_permissions').insert({ item_id: contextTarget.id, user_id: userData.id, permission_level: permission_level });
+            if (error) {
+                showToast(`İzin eklenemedi: ${error.message}`, "error");
+            } else {
+                showToast("Paylaşım izni eklendi!", "success");
+                openShareModal(contextTarget); // Modalı yenile
+            }
+        }
+
+        async function removePermission(permissionId) {
+            await _supabase.from('item_permissions').delete().eq('id', permissionId);
+            showToast("İzin kaldırıldı.", "success");
+            openShareModal(contextTarget); // Modalı yenile
         }
         function showToast(m, t = "success") { const toast = document.getElementById('toast'); if(toast) { document.getElementById('toastMessage').innerText = m; toast.classList.remove('translate-y-32', 'opacity-0'); setTimeout(() => toast.classList.add('translate-y-32', 'opacity-0'), 3000); } }
         function formatBytes(bytes) { if (!bytes || bytes === 0) return '0 B'; const k = 1024, sizes = ['B', 'KB', 'MB', 'GB']; const i = Math.floor(Math.log(bytes) / Math.log(k)); return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]; }
