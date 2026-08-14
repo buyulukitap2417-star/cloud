@@ -76,7 +76,7 @@
                 <span class="font-extrabold text-xl tracking-tight italic">MATOTA</span>
             </div>
             <nav class="space-y-1" id="categoryNav">
-                <button onclick="setFilter('all')" id="btn-all" class="sidebar-item active w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-all">
+                <button onclick="handleFilterChange('all')" id="btn-all" class="sidebar-item active w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-all">
                     <i class="fas fa-th-large w-5 text-center"></i> Tüm Dosyalar
                 </button>
                 <div id="dynamicCategories" class="space-y-1"></div>
@@ -120,7 +120,7 @@
 
         <!-- Mobil Kategoriler -->
         <div class="md:hidden flex overflow-x-auto p-4 gap-2 no-scrollbar bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
-            <button onclick="setFilter('all')" class="mobile-cat-btn whitespace-nowrap px-4 py-2 rounded-full bg-purple-100 text-purple-600 text-xs font-bold active:scale-95 transition-all" id="m-btn-all">Tümü</button>
+            <button onclick="handleFilterChange('all')" class="mobile-cat-btn whitespace-nowrap px-4 py-2 rounded-full bg-purple-100 text-purple-600 text-xs font-bold active:scale-95 transition-all" id="m-btn-all">Tümü</button>
             <div id="mobileCategories" class="flex gap-2"></div>
         </div>
 
@@ -423,8 +423,8 @@
         }
 
         function navigateToHome() {
-            setFilter('all');
-            if (document.getElementById('viewerModal').classList.contains('hidden')) return; closeViewer();
+            handleFilterChange('all');
+            closeViewer();
         }
 
         async function handleAuthenticatedSession(session) {
@@ -517,7 +517,7 @@
                     }
                 }
             } else { // If categorySlug is not found or is 'all' but not handled above
-                setFilter('all', false); // Default to 'all' if hash is invalid or just #/
+                setFilter('all'); // Default to 'all' if hash is invalid or just #/
             }
         }
 
@@ -792,7 +792,7 @@
             applyFilter();
         }
 
-        function setFilter(category, shouldUpdateUrl = true) {
+        function setFilter(category) {
             // Bu fonksiyon yönlendirme (routing) veya programatik olarak çağrılır.
             // Sadece durumu ve UI'ı günceller.
             currentFilter = category;
@@ -817,10 +817,6 @@
             }
 
             applyFilter();
-
-            if (shouldUpdateUrl) {
-                updateUrl(category);
-            }
         }
 
         function applyFilter() {
