@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MATOTA Cloud</title>
+    <title>MATOTA Cloud | Modern Dosya Arşivi</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -481,22 +481,49 @@
             const fileInput = document.getElementById('fileInput');
             const customNameInput = document.getElementById('customFileNameInput');
             if (!fileInput || !fileInput.files[0]) return;
+            
             const file = fileInput.files[0];
             const visibleName = customNameInput.value.trim() || file.name;
             const storagePath = `${Date.now()}_${sanitizeForStorage(file.name)}`;
+            
             document.getElementById('uploadProgress').classList.remove('hidden');
             updateProgress(20);
+            
             try {
-                const { error: sErr } = await _supabase.storage.from(STORAGE_BUCKET).upload(storagePath, file);
+                // Dosyayı doğrudan disk akışı yerine belleğe (ArrayBuffer) alıyoruz.
+                // Bu işlem ERR_UPLOAD_FILE_CHANGED hatasını tamamen engeller.
+                const fileBuffer = await file.arrayBuffer();
+                updateProgress(40);
+
+                const { error: sErr } = await _supabase.storage
+                    .from(STORAGE_BUCKET)
+                    .upload(storagePath, fileBuffer, {
+                        contentType: file.type || 'application/octet-stream',
+                        upsert: true
+                    });
+
                 if(sErr) throw sErr;
-                updateProgress(60);
+                
+                updateProgress(70);
                 const { data: uData } = _supabase.storage.from(STORAGE_BUCKET).getPublicUrl(storagePath);
-                await _supabase.from('files').insert([{ name: visibleName, size: file.size, type: file.type, url: uData.publicUrl, category: document.getElementById('uploadCategorySelect').value }]);
+                
+                await _supabase.from('files').insert([{ 
+                    name: visibleName, 
+                    size: file.size, 
+                    type: file.type, 
+                    url: uData.publicUrl, 
+                    category: document.getElementById('uploadCategorySelect').value 
+                }]);
+
                 updateProgress(100);
                 showToast("Buluta yüklendi!");
                 resetUploadForm();
                 fetchData();
-            } catch (e) { showToast("Yükleme hatası!", "error"); resetUploadForm(); }
+            } catch (e) { 
+                console.error(e);
+                showToast("Yükleme hatası!", "error"); 
+                resetUploadForm(); 
+            }
         }
 
         function updateProgress(v) { const bar = document.getElementById('progressBar'); if (bar) bar.style.width = v + '%'; }
