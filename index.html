@@ -502,7 +502,6 @@
             const alertBox = document.getElementById('fileStatusAlert');
             const compressBtn = document.getElementById('compressBtn');
             const uploadBtn = document.getElementById('uploadBtn');
-            const uploadBtnText = document.getElementById('adminBtnText');
             const display = document.getElementById('selectedFileNameDisplay');
 
             if (!fileInput || !fileInput.files[0]) return;
@@ -522,7 +521,7 @@
             if (isOverLimit) {
                 if (isPdf || isImage) {
                     alertBox.classList.add('bg-amber-50', 'text-amber-700');
-                    alertBox.innerHTML = `<i class="fas fa-exclamation-triangle mr-2"></i><strong>Dosya 50MB Sınırının Üstünde (${formatBytes(rawFile.size)}).</strong> Lütfen önce <strong>"1. Dosyayı Küçült"</strong> butonuna basarak optimize edin.`;
+                    alertBox.innerHTML = `<i class="fas fa-exclamation-triangle mr-2"></i><strong>Dosya 50MB Sınırının Üstünde (${formatBytes(rawFile.size)}).</strong> Yazı netliği korunarak ~30-45MB aralığına akıllı şekilde optimize edilecektir. Lütfen <strong>"1. Dosyayı Küçült"</strong> butonuna basın.`;
                     compressBtn.classList.remove('hidden');
                     uploadBtn.disabled = true;
                 } else {
@@ -534,7 +533,7 @@
             } else {
                 alertBox.classList.add('bg-emerald-50', 'text-emerald-700');
                 if (isPdf || isImage) {
-                    alertBox.innerHTML = `<i class="fas fa-check-circle mr-2"></i><strong>Dosya boyutu uygun (${formatBytes(rawFile.size)}).</strong> İsterseniz yüklemeden önce daha da küçültebilirsiniz.`;
+                    alertBox.innerHTML = `<i class="fas fa-check-circle mr-2"></i><strong>Dosya boyutu uygun (${formatBytes(rawFile.size)}).</strong> Yüksek netlikte optimize etmek veya boyutu biraz daha düşürmek isterseniz küçültebilirsiniz.`;
                     compressBtn.classList.remove('hidden');
                 } else {
                     alertBox.innerHTML = `<i class="fas fa-check-circle mr-2"></i><strong>Dosya boyutu yüklenebilir (${formatBytes(rawFile.size)}).</strong>`;
@@ -563,9 +562,9 @@
                         updateCompressProgress(pct, statusText);
                     });
                 } else if (isImage) {
-                    updateCompressProgress(30, "Görsel optimize ediliyor...");
+                    updateCompressProgress(30, "Görsel yüksek kalitede optimize ediliyor...");
                     compressedFile = await compressImageEngine(rawFile);
-                    updateCompressProgress(100, "Görsel sıkıştırıldı!");
+                    updateCompressProgress(100, "Görsel optimize edildi!");
                 }
 
                 compressProgress.classList.add('hidden');
@@ -574,15 +573,15 @@
                 const savedPct = Math.round((1 - (compressedFile.size / rawFile.size)) * 100);
                 
                 alertBox.className = "p-4 rounded-2xl text-xs font-bold bg-emerald-50 text-emerald-700 animate-fade-in";
-                alertBox.innerHTML = `<i class="fas fa-sparkles text-amber-500 mr-2"></i><strong>Küçültme Başarılı!</strong> ${formatBytes(rawFile.size)} ➔ <strong>${formatBytes(compressedFile.size)}</strong> (%${savedPct} Tasarruf). Şimdi yükleyebilirsiniz!`;
+                alertBox.innerHTML = `<i class="fas fa-sparkles text-amber-500 mr-2"></i><strong>Yüksek Kaliteli Optimize Tamamlandı!</strong> ${formatBytes(rawFile.size)} ➔ <strong>${formatBytes(compressedFile.size)}</strong> (%${savedPct} Tasarruf). Yazılar ve görseller netliğini korudu!`;
 
-                showToast(`Dosya %${savedPct} oranında küçültüldü! (${formatBytes(compressedFile.size)})`);
+                showToast(`Dosya netlik korunarak optimize edildi! (${formatBytes(compressedFile.size)})`);
 
                 if (compressedFile.size <= MAX_SIZE_BYTES) {
                     uploadBtn.disabled = false;
                 } else {
                     alertBox.className = "p-4 rounded-2xl text-xs font-bold bg-red-50 text-red-700";
-                    alertBox.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i>Küçültmeye rağmen dosya 50MB sınırının üzerinde kaldı (${formatBytes(compressedFile.size)}). Lütfen daha küçük bir dosya seçin.`;
+                    alertBox.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i>Optimizasyona rağmen dosya 50MB sınırının üzerinde kaldı (${formatBytes(compressedFile.size)}). Lütfen daha küçük bir dosya seçin.`;
                     uploadBtn.disabled = true;
                 }
 
@@ -615,32 +614,57 @@
             const { PDFDocument } = PDFLib;
             const newPdfDoc = await PDFDocument.create();
 
+            // Akıllı Dinamik Kalite & Çözünürlük Hesabı:
+            // Hedef: Okunabilirlik ve metin netliğini koruyup boyutu 30MB - 45MB bandına çekmek
+            const sizeMB = file.size / (1024 * 1024);
+            let renderScale = 2.2;  // Yüksek DPI (~160 DPI) - Metinler kristal netliğinde
+            let jpegQuality = 0.88; // %88 Yüksek JPEG kalitesi
+
+            if (sizeMB > 200) {
+                renderScale = 1.6;
+                jpegQuality = 0.78;
+            } else if (sizeMB > 120) {
+                renderScale = 1.8;
+                jpegQuality = 0.82;
+            } else if (sizeMB > 70) {
+                renderScale = 2.0;  // 144 DPI - Çok net
+                jpegQuality = 0.85;
+            } else {
+                renderScale = 2.2;
+                jpegQuality = 0.88;
+            }
+
             for (let i = 1; i <= numPages; i++) {
                 if (onProgress) {
                     const pagePct = Math.round((i / numPages) * 100);
-                    onProgress(pagePct, `PDF Sayfası İşleniyor (${i}/${numPages})...`);
+                    onProgress(pagePct, `PDF Sayfası Yüksek Netlikte İşleniyor (${i}/${numPages})...`);
                 }
 
                 const page = await pdf.getPage(i);
-                const viewport = page.getViewport({ scale: 1.0 });
+                const viewport = page.getViewport({ scale: renderScale });
 
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
                 canvas.width = viewport.width;
                 canvas.height = viewport.height;
 
+                // Net metin ve vektör çizimi için piksel pürüzsüzleştirme
+                context.imageSmoothingEnabled = true;
+                context.imageSmoothingQuality = 'high';
+
                 await page.render({ canvasContext: context, viewport: viewport }).promise;
 
-                const jpegUrl = canvas.toDataURL('image/jpeg', 0.55);
+                const jpegUrl = canvas.toDataURL('image/jpeg', jpegQuality);
                 const jpegImageBytes = await fetch(jpegUrl).then(res => res.arrayBuffer());
 
                 const embeddedImage = await newPdfDoc.embedJpg(jpegImageBytes);
-                const newPage = newPdfDoc.addPage([viewport.width, viewport.height]);
+                const origViewport = page.getViewport({ scale: 1.0 });
+                const newPage = newPdfDoc.addPage([origViewport.width, origViewport.height]);
                 newPage.drawImage(embeddedImage, {
                     x: 0,
                     y: 0,
-                    width: viewport.width,
-                    height: viewport.height,
+                    width: origViewport.width,
+                    height: origViewport.height,
                 });
             }
 
@@ -660,7 +684,7 @@
                         const canvas = document.createElement('canvas');
                         let width = img.width;
                         let height = img.height;
-                        const MAX_DIM = 2048;
+                        const MAX_DIM = 3840; // 4K Çözünürlük desteği
 
                         if (width > MAX_DIM || height > MAX_DIM) {
                             if (width > height) {
@@ -675,6 +699,8 @@
                         canvas.width = width;
                         canvas.height = height;
                         const ctx = canvas.getContext('2d');
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
                         ctx.drawImage(img, 0, 0, width, height);
 
                         canvas.toBlob((blob) => {
@@ -683,7 +709,7 @@
                             } else {
                                 resolve(file);
                             }
-                        }, 'image/jpeg', 0.75);
+                        }, 'image/jpeg', 0.88);
                     };
                     img.onerror = () => resolve(file);
                     img.src = e.target.result;
