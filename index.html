@@ -517,7 +517,7 @@
                     }
                 }
             } else { // If categorySlug is not found or is 'all' but not handled above
-                setFilter('all', false); // Default to 'all' if hash is invalid, DO NOT update URL
+                setFilter('all'); // Default to 'all' if hash is invalid, DO NOT update URL
             }
         }
 
@@ -792,7 +792,7 @@
             applyFilter();
         }
 
-        function setFilter(category, shouldUpdateUrl = true) {
+        function setFilter(category) {
             // Bu fonksiyon yönlendirme (routing) veya programatik olarak çağrılır.
             // Sadece durumu ve UI'ı günceller.
             currentFilter = category;
@@ -823,11 +823,6 @@
 
             applyFilter();
 
-        }
-
-        function applyFilterUIUpdates() {
-            // Bu yardımcı fonksiyon, setFilter'dan ayrıştırıldı.
-            // Sadece butonların ve başlığın görünümünü günceller.
             const isCategoryFilteringEnabled = currentFolderId === null;
 
             document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
