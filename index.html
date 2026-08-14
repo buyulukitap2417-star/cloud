@@ -1204,7 +1204,6 @@
                 updateUploadProgress(100, "Tamamlandı!");
                 showToast("Buluta başarıyla yüklendi!");
                 resetUploadForm();
-                fetchData();
                 await fetchItems(currentFolderId); // Mevcut klasördeki öğeleri yenile
             } catch (e) {
                 console.error("Yükleme hatası:", e);
@@ -1247,7 +1246,8 @@
             const input = document.getElementById('newCategoryInput');
             if (!input.value.trim()) return;
             await _supabase.from('categories').insert([{ name: input.value.trim() }]);
-            input.value = ''; fetchData();
+            input.value = ''; 
+            await fetchItems(currentFolderId); // Kategoriler ana dizinde olduğu için veriyi yenile
         }
         
         function renderCategoryManagement() {
