@@ -130,38 +130,64 @@
 
                 <div class="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1.5 canva-gradient"></div>
-                    <h2 class="text-2xl font-extrabold mb-8 text-slate-800 dark:text-white">Buluta Dosya Ekle</h2>
+                    <h2 class="text-2xl font-extrabold mb-6 text-slate-800 dark:text-white">Buluta Dosya Ekle</h2>
+                    
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <label for="fileInput" class="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-3xl p-6 md:p-10 flex flex-col items-center justify-center cursor-pointer hover:border-purple-400 hover:bg-purple-50/10 transition-all group">
                             <i class="fas fa-cloud-upload-alt text-4xl text-slate-400 mb-4 group-hover:scale-110 transition-transform"></i>
-                            <p class="text-sm font-bold text-slate-600">Dosya Seç</p>
+                            <p class="text-sm font-bold text-slate-600 dark:text-slate-300">Dosya Seçin</p>
+                            <span class="text-[10px] text-slate-400 mt-1">PDF, Görsel, Video veya Arşiv</span>
                             <input id="fileInput" type="file" class="hidden" onchange="handleFileSelect()" />
                         </label>
+
                         <div class="space-y-4">
+                            <!-- Durum ve Bilgilendirme Kutusu -->
+                            <div id="fileStatusAlert" class="hidden p-4 rounded-2xl text-xs font-bold transition-all"></div>
+
                             <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
                                 <span class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Web Sitesinde Görünen İsim</span>
                                 <input type="text" id="customFileNameInput" placeholder="Örn: Kısa Taktikler" class="w-full bg-transparent border-none outline-none text-sm font-bold dark:text-white">
                             </div>
+
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
-                                    <span class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Dosya Boyutu (Max 50MB)</span>
-                                    <p id="selectedFileNameDisplay" class="text-[10px] font-bold truncate italic opacity-50">Seçim yok</p>
+                                    <span class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Seçilen Dosya Boyutu</span>
+                                    <p id="selectedFileNameDisplay" class="text-xs font-bold truncate italic opacity-60">Seçim yok</p>
                                 </div>
                                 <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
                                     <span class="text-[10px] font-extrabold text-slate-400 uppercase block mb-1">Kategori</span>
                                     <select id="uploadCategorySelect" class="bg-transparent border-none outline-none text-xs font-bold w-full dark:text-white cursor-pointer"></select>
                                 </div>
                             </div>
-                            <div class="text-[10px] text-slate-400 font-semibold px-1">
-                                <i class="fas fa-info-circle text-purple-500 mr-1"></i> Görseller ve PDF'ler yükleme öncesinde otomatik küçültülür. Maksimum yükleme limiti 50MB'dir.
+
+                            <!-- Adım 1: Küçült Butonu -->
+                            <button id="compressBtn" class="hidden bg-amber-500 hover:bg-amber-600 text-white w-full py-3.5 rounded-2xl font-extrabold shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2" onclick="compressCurrentFile()">
+                                <i class="fas fa-compress-alt"></i> 1. Dosyayı Küçült (Optimize Et)
+                            </button>
+
+                            <!-- Sıkıştırma Progress -->
+                            <div id="compressProgress" class="hidden space-y-1.5 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl">
+                                <div class="flex justify-between text-[10px] font-bold text-amber-700 dark:text-amber-300">
+                                    <span id="compressStatusText">PDF Küçültülüyor...</span>
+                                    <span id="compressPercentText">0%</span>
+                                </div>
+                                <div class="h-2 bg-amber-200 dark:bg-amber-950 rounded-full overflow-hidden">
+                                    <div id="compressProgressBar" class="bg-amber-500 h-full transition-all duration-200" style="width: 0%"></div>
+                                </div>
                             </div>
-                            <button id="uploadBtn" disabled onclick="uploadFile()" class="canva-gradient text-white w-full py-4 rounded-2xl font-extrabold shadow-xl transition-all active:scale-95">MATOTA'ya Aktar</button>
+
+                            <!-- Adım 2: Yükle Butonu -->
+                            <button id="uploadBtn" disabled onclick="uploadFile()" class="canva-gradient text-white w-full py-4 rounded-2xl font-extrabold shadow-xl transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2">
+                                <i class="fas fa-cloud-upload-alt"></i> <span id="uploadBtnText">2. MATOTA'ya Aktar</span>
+                            </button>
+
+                            <!-- Yükleme Progress -->
                             <div id="uploadProgress" class="hidden space-y-1">
                                 <div class="flex justify-between text-[10px] font-bold text-slate-400">
-                                    <span id="uploadStatusText">İşleniyor...</span>
+                                    <span id="uploadStatusText">Sunucuya Aktarılıyor...</span>
                                     <span id="uploadPercentText">0%</span>
                                 </div>
-                                <div class="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                <div class="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                     <div id="progressBar" class="canva-gradient h-full transition-all duration-300" style="width: 0%"></div>
                                 </div>
                             </div>
@@ -228,6 +254,7 @@
         const SUPABASE_URL = "https://xtmnfpfnxsgemjejmpaq.supabase.co";
         const SUPABASE_KEY = "sb_publishable_AFhTTSw30vvy42C1tBkW2Q_suUE1u3G";
         const STORAGE_BUCKET = "archives";
+        const MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50MB Limit
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         const ADMIN_PASS = "AliSengul77MatotaOnline";
 
@@ -240,18 +267,17 @@
         let currentZoom = 1;
         let currentPdfUrl = "";
 
-        // --- Hash-Based Routing Mantığı (Çözüm) ---
+        // File State for 2-step Compression & Upload
+        let rawFile = null;
+        let compressedFile = null;
+
         window.onload = () => { 
             initTheme(); 
             fetchData().then(() => {
                 handleInitialRouting();
             });
             document.getElementById('adminPasswordInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') validatePassword(); });
-            
-            // URL değiştiğinde tetiklenir (Geri tuşu veya elle link değişimi)
-            window.addEventListener('hashchange', () => {
-                handleInitialRouting();
-            });
+            window.addEventListener('hashchange', () => { handleInitialRouting(); });
         };
 
         function updateUrl(category, fileName = null) {
@@ -264,7 +290,6 @@
             } else {
                 hash = "#/";
             }
-            // window.location.hash kullanarak yönlendirme yapıyoruz
             window.location.hash = hash;
         }
 
@@ -274,7 +299,7 @@
         }
 
         function handleInitialRouting() {
-            const hash = window.location.hash.substring(2); // baştaki '#/' kısmını kaldır
+            const hash = window.location.hash.substring(2);
             if (!hash) {
                 setFilter('all', false);
                 return;
@@ -284,7 +309,6 @@
             const categorySlug = parts[0];
             const fileSlug = parts[1];
 
-            // Kategori eşleşmesi bul
             const targetCategory = allCategories.find(c => 
                 c.name.toLowerCase().replace(/ /g, '-') === categorySlug
             );
@@ -305,7 +329,6 @@
             }
         }
 
-        // --- Tema ve Yetki ---
         function toggleTheme() { const isDark = document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', isDark ? 'dark' : 'light'); updateThemeIcon(); }
         function initTheme() { if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark'); updateThemeIcon(); }
         function updateThemeIcon() { document.getElementById('themeIcon').className = document.documentElement.classList.contains('dark') ? 'fas fa-sun' : 'fas fa-moon'; }
@@ -327,7 +350,6 @@
             if(isAdmin) renderCategoryManagement();
         }
 
-        // --- Veri ---
         async function fetchData() {
             try {
                 const { data: catData } = await _supabase.from('categories').select('*').order('name');
@@ -392,7 +414,6 @@
 
         function filterFiles() { applyFilter(); }
 
-        // --- Kapak ve Kartlar ---
         function getFileCover(file) {
             const type = (file.type || '').toLowerCase();
             if (type.includes('image')) return `<img src="${file.url}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">`;
@@ -434,7 +455,6 @@
                 </div>`).join('');
         }
 
-        // --- Görüntüleyici ---
         function openViewer(url, name, type, shouldUpdateUrl = true) {
             const viewerModal = document.getElementById('viewerModal');
             const wrapper = document.getElementById('viewerFrameWrapper');
@@ -477,107 +497,162 @@
 
         function printPDF() { if (currentPdfUrl) window.open(currentPdfUrl, '_blank').print(); }
 
-        // --- Dosya İşlemleri & Admin ---
         function handleFileSelect() {
             const fileInput = document.getElementById('fileInput');
+            const alertBox = document.getElementById('fileStatusAlert');
+            const compressBtn = document.getElementById('compressBtn');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const uploadBtnText = document.getElementById('adminBtnText');
             const display = document.getElementById('selectedFileNameDisplay');
-            if (fileInput && fileInput.files[0]) {
-                const file = fileInput.files[0];
-                document.getElementById('customFileNameInput').value = file.name;
-                
-                const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-                const isOverLimit = file.size > 50 * 1024 * 1024;
-                
-                if (display) {
-                    let text = formatBytes(file.size);
-                    if (isOverLimit) {
-                        if (isPdf) {
-                            text += ' ⚡ (Küçültülüp yüklenecek)';
-                        } else if (!file.type.startsWith('image/')) {
-                            text += ' ⚠️ (50MB Sınırı Aşıldı)';
-                        }
-                    }
-                    display.innerText = text;
-                    display.className = `text-[10px] font-bold truncate italic ${isOverLimit ? 'text-amber-500' : 'opacity-50'}`;
+
+            if (!fileInput || !fileInput.files[0]) return;
+
+            rawFile = fileInput.files[0];
+            compressedFile = null;
+
+            document.getElementById('customFileNameInput').value = rawFile.name;
+            display.innerText = `${rawFile.name} (${formatBytes(rawFile.size)})`;
+
+            const isPdf = rawFile.type === 'application/pdf' || rawFile.name.toLowerCase().endsWith('.pdf');
+            const isImage = rawFile.type.startsWith('image/');
+            const isOverLimit = rawFile.size > MAX_SIZE_BYTES;
+
+            alertBox.classList.remove('hidden', 'bg-red-50', 'text-red-700', 'bg-amber-50', 'text-amber-700', 'bg-emerald-50', 'text-emerald-700');
+
+            if (isOverLimit) {
+                if (isPdf || isImage) {
+                    alertBox.classList.add('bg-amber-50', 'text-amber-700');
+                    alertBox.innerHTML = `<i class="fas fa-exclamation-triangle mr-2"></i><strong>Dosya 50MB Sınırının Üstünde (${formatBytes(rawFile.size)}).</strong> Lütfen önce <strong>"1. Dosyayı Küçült"</strong> butonuna basarak optimize edin.`;
+                    compressBtn.classList.remove('hidden');
+                    uploadBtn.disabled = true;
+                } else {
+                    alertBox.classList.add('bg-red-50', 'text-red-700');
+                    alertBox.innerHTML = `<i class="fas fa-times-circle mr-2"></i><strong>Dosya 50MB Sınırını Aşıyor (${formatBytes(rawFile.size)}).</strong> Bu dosya formatı otomatik küçültülemiyor. Lütfen 50MB altında bir dosya seçin.`;
+                    compressBtn.classList.add('hidden');
+                    uploadBtn.disabled = true;
                 }
-                
-                document.getElementById('uploadBtn').disabled = false;
+            } else {
+                alertBox.classList.add('bg-emerald-50', 'text-emerald-700');
+                if (isPdf || isImage) {
+                    alertBox.innerHTML = `<i class="fas fa-check-circle mr-2"></i><strong>Dosya boyutu uygun (${formatBytes(rawFile.size)}).</strong> İsterseniz yüklemeden önce daha da küçültebilirsiniz.`;
+                    compressBtn.classList.remove('hidden');
+                } else {
+                    alertBox.innerHTML = `<i class="fas fa-check-circle mr-2"></i><strong>Dosya boyutu yüklenebilir (${formatBytes(rawFile.size)}).</strong>`;
+                    compressBtn.classList.add('hidden');
+                }
+                uploadBtn.disabled = false;
             }
         }
 
-        // --- Otomatik PDF Sıkıştırma Motoru ---
-        async function compressPdfIfNeeded(file, onProgress) {
-            if (!file || !(file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'))) {
-                return file;
-            }
+        async function compressCurrentFile() {
+            if (!rawFile) return;
+
+            const isPdf = rawFile.type === 'application/pdf' || rawFile.name.toLowerCase().endsWith('.pdf');
+            const isImage = rawFile.type.startsWith('image/');
+            const compressProgress = document.getElementById('compressProgress');
+            const compressBtn = document.getElementById('compressBtn');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const alertBox = document.getElementById('fileStatusAlert');
+
+            compressProgress.classList.remove('hidden');
+            compressBtn.disabled = true;
 
             try {
-                if (typeof pdfjsLib === 'undefined' || typeof PDFLib === 'undefined') {
-                    console.warn("PDF kütüphaneleri yüklenemedi, orijinal dosya kullanılıyor.");
-                    return file;
-                }
-
-                const arrayBuffer = await file.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                const numPages = pdf.numPages;
-
-                const { PDFDocument } = PDFLib;
-                const newPdfDoc = await PDFDocument.create();
-
-                for (let i = 1; i <= numPages; i++) {
-                    if (onProgress) {
-                        const pagePct = Math.round((i / numPages) * 100);
-                        onProgress(pagePct, `PDF Küçültülüyor... (${i}/${numPages} Sayfa)`);
-                    }
-
-                    const page = await pdf.getPage(i);
-                    const viewport = page.getViewport({ scale: 1.1 });
-
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    canvas.width = viewport.width;
-                    canvas.height = viewport.height;
-
-                    await page.render({ canvasContext: context, viewport: viewport }).promise;
-
-                    // Canvas görüntüsünü kaliteli JPEG olarak sıkıştır
-                    const jpegUrl = canvas.toDataURL('image/jpeg', 0.60);
-                    const jpegImageBytes = await fetch(jpegUrl).then(res => res.arrayBuffer());
-
-                    const embeddedImage = await newPdfDoc.embedJpg(jpegImageBytes);
-                    const newPage = newPdfDoc.addPage([viewport.width, viewport.height]);
-                    newPage.drawImage(embeddedImage, {
-                        x: 0,
-                        y: 0,
-                        width: viewport.width,
-                        height: viewport.height,
+                if (isPdf) {
+                    compressedFile = await compressPdfEngine(rawFile, (pct, statusText) => {
+                        updateCompressProgress(pct, statusText);
                     });
+                } else if (isImage) {
+                    updateCompressProgress(30, "Görsel optimize ediliyor...");
+                    compressedFile = await compressImageEngine(rawFile);
+                    updateCompressProgress(100, "Görsel sıkıştırıldı!");
                 }
 
-                const pdfBytes = await newPdfDoc.save();
-                const compressedFile = new File([pdfBytes], file.name, {
-                    type: 'application/pdf',
-                    lastModified: Date.now()
-                });
+                compressProgress.classList.add('hidden');
+                compressBtn.classList.add('hidden');
 
-                if (compressedFile.size < file.size) {
-                    const savedPct = Math.round((1 - (compressedFile.size / file.size)) * 100);
-                    showToast(`PDF %${savedPct} oranında küçültüldü! (${formatBytes(file.size)} → ${formatBytes(compressedFile.size)})`);
-                    return compressedFile;
+                const savedPct = Math.round((1 - (compressedFile.size / rawFile.size)) * 100);
+                
+                alertBox.className = "p-4 rounded-2xl text-xs font-bold bg-emerald-50 text-emerald-700 animate-fade-in";
+                alertBox.innerHTML = `<i class="fas fa-sparkles text-amber-500 mr-2"></i><strong>Küçültme Başarılı!</strong> ${formatBytes(rawFile.size)} ➔ <strong>${formatBytes(compressedFile.size)}</strong> (%${savedPct} Tasarruf). Şimdi yükleyebilirsiniz!`;
+
+                showToast(`Dosya %${savedPct} oranında küçültüldü! (${formatBytes(compressedFile.size)})`);
+
+                if (compressedFile.size <= MAX_SIZE_BYTES) {
+                    uploadBtn.disabled = false;
+                } else {
+                    alertBox.className = "p-4 rounded-2xl text-xs font-bold bg-red-50 text-red-700";
+                    alertBox.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i>Küçültmeye rağmen dosya 50MB sınırının üzerinde kaldı (${formatBytes(compressedFile.size)}). Lütfen daha küçük bir dosya seçin.`;
+                    uploadBtn.disabled = true;
                 }
-                return file;
+
             } catch (err) {
-                console.error("PDF Sıkıştırma hatası:", err);
-                return file;
+                console.error("Sıkıştırma hatası:", err);
+                compressProgress.classList.add('hidden');
+                compressBtn.disabled = false;
+                showToast("Sıkıştırma sırasında hata oluştu!", "error");
             }
         }
 
-        // --- Otomatik Görsel Sıkıştırma ---
-        function compressImageIfNeeded(file) {
-            return new Promise((resolve) => {
-                if (!file || !file.type.startsWith('image/')) {
-                    return resolve(file);
+        function updateCompressProgress(pct, text) {
+            const bar = document.getElementById('compressProgressBar');
+            const statusEl = document.getElementById('compressStatusText');
+            const percentEl = document.getElementById('compressPercentText');
+            if (bar) bar.style.width = pct + '%';
+            if (statusEl && text) statusEl.innerText = text;
+            if (percentEl) percentEl.innerText = pct + '%';
+        }
+
+        async function compressPdfEngine(file, onProgress) {
+            if (typeof pdfjsLib === 'undefined' || typeof PDFLib === 'undefined') {
+                return file;
+            }
+
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            const numPages = pdf.numPages;
+
+            const { PDFDocument } = PDFLib;
+            const newPdfDoc = await PDFDocument.create();
+
+            for (let i = 1; i <= numPages; i++) {
+                if (onProgress) {
+                    const pagePct = Math.round((i / numPages) * 100);
+                    onProgress(pagePct, `PDF Sayfası İşleniyor (${i}/${numPages})...`);
                 }
+
+                const page = await pdf.getPage(i);
+                const viewport = page.getViewport({ scale: 1.0 });
+
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+
+                await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+                const jpegUrl = canvas.toDataURL('image/jpeg', 0.55);
+                const jpegImageBytes = await fetch(jpegUrl).then(res => res.arrayBuffer());
+
+                const embeddedImage = await newPdfDoc.embedJpg(jpegImageBytes);
+                const newPage = newPdfDoc.addPage([viewport.width, viewport.height]);
+                newPage.drawImage(embeddedImage, {
+                    x: 0,
+                    y: 0,
+                    width: viewport.width,
+                    height: viewport.height,
+                });
+            }
+
+            const pdfBytes = await newPdfDoc.save();
+            return new File([pdfBytes], file.name, {
+                type: 'application/pdf',
+                lastModified: Date.now()
+            });
+        }
+
+        function compressImageEngine(file) {
+            return new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const img = new Image();
@@ -585,7 +660,7 @@
                         const canvas = document.createElement('canvas');
                         let width = img.width;
                         let height = img.height;
-                        const MAX_DIM = 2560;
+                        const MAX_DIM = 2048;
 
                         if (width > MAX_DIM || height > MAX_DIM) {
                             if (width > height) {
@@ -603,16 +678,12 @@
                         ctx.drawImage(img, 0, 0, width, height);
 
                         canvas.toBlob((blob) => {
-                            if (blob && blob.size < file.size) {
-                                const compressedFile = new File([blob], file.name, {
-                                    type: 'image/jpeg',
-                                    lastModified: Date.now()
-                                });
-                                resolve(compressedFile);
+                            if (blob) {
+                                resolve(new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() }));
                             } else {
                                 resolve(file);
                             }
-                        }, 'image/jpeg', 0.82);
+                        }, 'image/jpeg', 0.75);
                     };
                     img.onerror = () => resolve(file);
                     img.src = e.target.result;
@@ -628,242 +699,81 @@
         }
 
         async function uploadFile() {
-            const fileInput = document.getElementById('fileInput');
+            const fileToUpload = compressedFile || rawFile;
+            if (!fileToUpload) return;
+
             const customNameInput = document.getElementById('customFileNameInput');
-            if (!fileInput || !fileInput.files[0]) return;
-            
-            let file = fileInput.files[0];
-            const visibleName = customNameInput.value.trim() || file.name;
-            const MAX_SIZE = 50 * 1024 * 1024; // 50MB
+            const categorySelect = document.getElementById('uploadCategorySelect');
+            const visibleName = (customNameInput ? customNameInput.value.trim() : "") || fileToUpload.name;
 
-            document.getElementById('uploadProgress').classList.remove('hidden');
-            updateProgress(5, "Dosya taranıyor...");
-
-            // 1. Görsel Otomatik Sıkıştırma
-            if (file.type.startsWith('image/')) {
-                updateProgress(15, "Görsel optimize ediliyor...");
-                const compressed = await compressImageIfNeeded(file);
-                if (compressed.size < file.size) {
-                    file = compressed;
-                    showToast("Görsel otomatik olarak sıkıştırıldı.");
-                }
-            }
-
-            // 2. PDF Otomatik Sıkıştırma
-            if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-                updateProgress(15, "PDF analiz ediliyor...");
-                const compressedPdf = await compressPdfIfNeeded(file, (pct, statusText) => {
-                    updateProgress(15 + Math.round(pct * 0.35), statusText);
-                });
-                file = compressedPdf;
-            }
-
-            // 3. 50MB Limit Kontrolü
-            if (file.size > MAX_SIZE) {
-                showToast("Dosya boyutu sıkıştırılmasına rağmen 50MB sınırını aşıyor!", "error");
-                resetUploadForm();
+            if (fileToUpload.size > MAX_SIZE_BYTES) {
+                showToast("Dosya boyutu 50MB sınırını aşıyor! Lütfen önce küçültün.", "error");
                 return;
             }
 
-            const storagePath = `${Date.now()}_${sanitizeForStorage(file.name)}`;
-            updateProgress(55, "MATOTA Cloud'a aktarılıyor...");
+            const storagePath = `${Date.now()}_${sanitizeForStorage(rawFile.name)}`;
+            const uploadProgress = document.getElementById('uploadProgress');
+            const uploadBtn = document.getElementById('uploadBtn');
+
+            uploadProgress.classList.remove('hidden');
+            uploadBtn.disabled = true;
+            updateUploadProgress(30, "MATOTA Cloud'a Aktarılıyor...");
 
             try {
-                const fileBuffer = await file.arrayBuffer();
-                updateProgress(75, "Sunucuya yazılıyor...");
+                const fileBuffer = await fileToUpload.arrayBuffer();
+                updateUploadProgress(60, "Sunucuya Yazılıyor...");
 
                 const { error: sErr } = await _supabase.storage
                     .from(STORAGE_BUCKET)
                     .upload(storagePath, fileBuffer, {
-                        contentType: file.type || 'application/octet-stream',
+                        contentType: fileToUpload.type || 'application/octet-stream',
                         upsert: true
                     });
 
                 if (sErr) throw sErr;
-                
-                updateProgress(90, "Veritabanı güncelleniyor...");
+
+                updateUploadProgress(85, "Veritabanı Güncelleniyor...");
                 const { data: uData } = _supabase.storage.from(STORAGE_BUCKET).getPublicUrl(storagePath);
-                
+
                 await _supabase.from('files').insert([{ 
                     name: visibleName, 
-                    size: file.size, 
-                    type: file.type, 
+                    size: fileToUpload.size, 
+                    type: fileToUpload.type, 
                     url: uData.publicUrl, 
-                    category: document.getElementById('uploadCategorySelect').value 
+                    category: categorySelect ? categorySelect.value : "Genel" 
                 }]);
 
-                updateProgress(100, "Tamamlandı!");
-                showToast("MATOTA Cloud'a başarıyla yüklendi!");
+                updateUploadProgress(100, "Tamamlandı!");
+                showToast("Buluta başarıyla yüklendi!");
                 resetUploadForm();
                 fetchData();
-            } catch (e) { 
-                console.error(e);
-                let errorMsg = "Yükleme hatası!";
-                if (e && e.message && e.message.includes("exceeded the maximum allowed size")) {
-                    errorMsg = "Dosya boyutu 50MB kova limitini aşıyor!";
-                } else if (e && e.message) {
-                    errorMsg = e.message;
-                }
-                showToast(errorMsg, "error"); 
-                resetUploadForm(); 
+            } catch (e) {
+                console.error("Yükleme hatası:", e);
+                showToast("Yükleme başarısız oldu!", "error");
+                resetUploadForm();
             }
         }
 
-        function updateProgress(v, statusText) { 
+        function updateUploadProgress(v, text) { 
             const bar = document.getElementById('progressBar');
             const statusEl = document.getElementById('uploadStatusText');
             const percentEl = document.getElementById('uploadPercentText');
             if (bar) bar.style.width = v + '%'; 
-            if (statusEl && statusText) statusEl.innerText = statusText;
+            if (statusEl && text) statusEl.innerText = text;
             if (percentEl) percentEl.innerText = v + '%';
         }
 
         function resetUploadForm() { 
-            document.getElementById('fileInput').value = ''; 
-            document.getElementById('customFileNameInput').value = ''; 
-            document.getElementById('selectedFileNameDisplay').innerText = 'Seçim yok'; 
-            document.getElementById('selectedFileNameDisplay').className = 'text-[10px] font-bold truncate italic opacity-50';
-            document.getElementById('uploadBtn').disabled = true; 
-            document.getElementById('uploadProgress').classList.add('hidden'); 
-            updateProgress(0, "İşleniyor...");
-        }
-
-        // --- Otomatik Görsel Sıkıştırma (Client-side Image Compressor) ---
-        function compressImageIfNeeded(file) {
-            return new Promise((resolve) => {
-                if (!file || !file.type.startsWith('image/')) {
-                    return resolve(file);
-                }
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
-                        const MAX_DIM = 2560; // Max piksel genişliği/yüksekliği
-
-                        if (width > MAX_DIM || height > MAX_DIM) {
-                            if (width > height) {
-                                height = Math.round((height * MAX_DIM) / width);
-                                width = MAX_DIM;
-                            } else {
-                                width = Math.round((width * MAX_DIM) / height);
-                                height = MAX_DIM;
-                            }
-                        }
-
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-
-                        canvas.toBlob((blob) => {
-                            if (blob && blob.size < file.size) {
-                                const compressedFile = new File([blob], file.name, {
-                                    type: 'image/jpeg',
-                                    lastModified: Date.now()
-                                });
-                                resolve(compressedFile);
-                            } else {
-                                resolve(file);
-                            }
-                        }, 'image/jpeg', 0.82);
-                    };
-                    img.onerror = () => resolve(file);
-                    img.src = e.target.result;
-                };
-                reader.onerror = () => resolve(file);
-                reader.readAsDataURL(file);
-            });
-        }
-
-        function sanitizeForStorage(name) {
-            const map = {'ç':'c','Ç':'C','ğ':'g','Ğ':'G','ı':'i','I':'i','İ':'i','ö':'o','Ö':'O','ş':'s','Ş':'S','ü':'u','Ü':'U'};
-            return name.replace(/[çÇğĞıIİöÖşŞüÜ]/g, m => map[m]).replace(/[^a-zA-Z0-9.-]/g, '-').replace(/-+/g, '-').toLowerCase();
-        }
-
-        async function uploadFile() {
-            const fileInput = document.getElementById('fileInput');
-            const customNameInput = document.getElementById('customFileNameInput');
-            if (!fileInput || !fileInput.files[0]) return;
-            
-            let file = fileInput.files[0];
-            const visibleName = customNameInput.value.trim() || file.name;
-            const MAX_SIZE = 50 * 1024 * 1024; // 50MB Byte cinsinden
-
-            document.getElementById('uploadProgress').classList.remove('hidden');
-            updateProgress(10);
-
-            // 1. Görselse otomatik sıkıştır
-            if (file.type.startsWith('image/')) {
-                updateProgress(25);
-                const compressed = await compressImageIfNeeded(file);
-                if (compressed.size < file.size) {
-                    file = compressed;
-                    showToast("Görsel otomatik olarak sıkıştırıldı.");
-                }
-            }
-
-            // 2. 50MB Limit Kontrolü
-            if (file.size > MAX_SIZE) {
-                showToast("Dosya boyutu 50MB sınırını aşıyor! Lütfen dosyayı küçülterek tekrar deneyin.", "error");
-                resetUploadForm();
-                return;
-            }
-
-            const storagePath = `${Date.now()}_${sanitizeForStorage(file.name)}`;
-            updateProgress(40);
-
-            try {
-                // Belleğe alma yöntemi ile yükleme
-                const fileBuffer = await file.arrayBuffer();
-                updateProgress(60);
-
-                const { error: sErr } = await _supabase.storage
-                    .from(STORAGE_BUCKET)
-                    .upload(storagePath, fileBuffer, {
-                        contentType: file.type || 'application/octet-stream',
-                        upsert: true
-                    });
-
-                if (sErr) throw sErr;
-                
-                updateProgress(85);
-                const { data: uData } = _supabase.storage.from(STORAGE_BUCKET).getPublicUrl(storagePath);
-                
-                await _supabase.from('files').insert([{ 
-                    name: visibleName, 
-                    size: file.size, 
-                    type: file.type, 
-                    url: uData.publicUrl, 
-                    category: document.getElementById('uploadCategorySelect').value 
-                }]);
-
-                updateProgress(100);
-                showToast("MATOTA Cloud'a başarıyla yüklendi!");
-                resetUploadForm();
-                fetchData();
-            } catch (e) { 
-                console.error(e);
-                let errorMsg = "Yükleme hatası!";
-                if (e && e.message && e.message.includes("exceeded the maximum allowed size")) {
-                    errorMsg = "Dosya boyutu 50MB kova limitini aşıyor!";
-                } else if (e && e.message) {
-                    errorMsg = e.message;
-                }
-                showToast(errorMsg, "error"); 
-                resetUploadForm(); 
-            }
-        }
-
-        function updateProgress(v) { const bar = document.getElementById('progressBar'); if (bar) bar.style.width = v + '%'; }
-        function resetUploadForm() { 
+            rawFile = null;
+            compressedFile = null;
             document.getElementById('fileInput').value = ''; 
             document.getElementById('customFileNameInput').value = ''; 
             document.getElementById('selectedFileNameDisplay').innerText = 'Seçim yok'; 
             document.getElementById('uploadBtn').disabled = true; 
             document.getElementById('uploadProgress').classList.add('hidden'); 
+            document.getElementById('compressProgress').classList.add('hidden'); 
+            document.getElementById('compressBtn').classList.add('hidden'); 
+            document.getElementById('fileStatusAlert').classList.add('hidden'); 
         }
 
         async function addCategory() {
